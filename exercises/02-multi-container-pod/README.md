@@ -54,21 +54,27 @@ metadata:
   namespace: exercise-02
 spec:
   containers:
-  - name: app
-    image: busybox
-    command: ["sh", "-c", "while true; do date >> /var/log/app.log; sleep 5; done"]
-    volumeMounts:
-    - name: logs
-      mountPath: /var/log
-  - name: log-agent
-    image: busybox
-    command: ["sh", "-c", "tail -f /var/log/app.log"]
-    volumeMounts:
-    - name: logs
-      mountPath: /var/log
+    - name: app
+      image: busybox
+      command:
+        ["sh", "-c", "while true; do date >> /var/log/app.log; sleep 5; done"]
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log
+    - name: log-agent
+      image: busybox
+      command:
+        [
+          "sh",
+          "-c",
+          "while [ ! -f /var/log/app.log ]; do sleep 1; done; tail -f /var/log/app.log",
+        ]
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log
   volumes:
-  - name: logs
-    emptyDir: {}
+    - name: logs
+      emptyDir: {}
 ```
 
 </details>
@@ -84,23 +90,29 @@ metadata:
   namespace: exercise-02
 spec:
   initContainers:
-  - name: log-agent
-    image: busybox
-    restartPolicy: Always
-    command: ["sh", "-c", "tail -f /var/log/app.log"]
-    volumeMounts:
-    - name: logs
-      mountPath: /var/log
+    - name: log-agent
+      image: busybox
+      restartPolicy: Always
+      command:
+        [
+          "sh",
+          "-c",
+          "while [ ! -f /var/log/app.log ]; do sleep 1; done; tail -f /var/log/app.log",
+        ]
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log
   containers:
-  - name: app
-    image: busybox
-    command: ["sh", "-c", "while true; do date >> /var/log/app.log; sleep 5; done"]
-    volumeMounts:
-    - name: logs
-      mountPath: /var/log
+    - name: app
+      image: busybox
+      command:
+        ["sh", "-c", "while true; do date >> /var/log/app.log; sleep 5; done"]
+      volumeMounts:
+        - name: logs
+          mountPath: /var/log
   volumes:
-  - name: logs
-    emptyDir: {}
+    - name: logs
+      emptyDir: {}
 ```
 
 </details>
