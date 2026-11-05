@@ -1,8 +1,10 @@
 # CKAD Mock Exam — Full Practice Test
 
+**Practice Kubernetes Version:** v1.37
 **Duration:** Recommended 2 hours  
-**Format:** 15 questions (mix of easy, medium, hard)  
-**Passing Score:** 70% (≈11 correct)  
+**Format:** 15 original practice tasks (mix of easy, medium, hard); points are practice rubric values, not exam percentages.
+**Available Practice Points:** 720
+**Practice Threshold:** 476/720 points (about 66%); this is not an official exam pass prediction.
 **Tip:** Time yourself. Use the exam-strategy.md time budget.
 
 ---
@@ -93,19 +95,28 @@ Verify:
 <summary>Solution</summary>
 
 ```bash
-# Create deployment
-kubectl create deployment web-app \
-  --image=nginx \
-  --replicas=3 \
-  -n exam
-
-# Add labels to deployment selector
-kubectl set labels deployment/web-app app=web tier=frontend -n exam
-
-# Or edit directly:
-# kubectl edit deployment web-app -n exam
-# Add to spec.selector.matchLabels: app: web, tier: frontend
-# Add to spec.template.metadata.labels: app: web, tier: frontend
+# Set selector and Pod template labels at creation; Deployment selectors are immutable.
+kubectl apply -n exam -f - <<'EOF'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: web
+        tier: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.27
+EOF
 
 # Expose service
 kubectl expose deployment web-app \
@@ -128,8 +139,7 @@ kubectl get endpoints web-svc -n exam
 
 ### Question 4 (5 min) — Medium: Fix Service Selector Mismatch
 
-A Deployment named `api-backend` exists with 2 pods labeled `app: api`.  
-A Service named `api-svc` exists but shows 0 endpoints.
+A Deployment named `api-backend` exists with 2 Ready Pods labeled `app: api`. The Service `api-svc` selects `app: backend` and exposes port 8080 to targetPort 80, but has no endpoints.
 
 **Debug and fix it.**
 
@@ -143,15 +153,8 @@ kubectl get svc api-svc -n exam -o jsonpath='{.spec.selector}'
 # Check pod labels
 kubectl get pod -n exam --show-labels
 
-# Likely mismatch (e.g., service selector app: backend but pods are app: api)
-
-# Fix: Edit service
-kubectl edit svc api-svc -n exam
-# Change selector.app to match pod label (e.g., from "backend" to "api")
-
-# Or recreate:
-kubectl delete svc api-svc -n exam
-kubectl expose deployment api-backend --port=8080 --target-port=8080 --name=api-svc -n exam
+# Patch only the selector to match the existing Pod labels.
+kubectl patch svc api-svc -n exam --type=merge -p '{"spec":{"selector":{"app":"api"}}}'
 
 # Verify
 kubectl get endpoints api-svc -n exam
@@ -220,8 +223,8 @@ Verify it's created.
 kubectl create cronjob daily-task \
   --image=busybox \
   --schedule="0 3 * * *" \
-  -- /bin/sh -c 'echo "Daily backup started" && sleep 5 && echo "Done"' \
-  -n exam
+  -n exam \
+  -- /bin/sh -c 'echo "Daily backup started" && sleep 5 && echo "Done"'
 
 # Verify
 kubectl get cronjob daily-task -n exam
@@ -258,7 +261,7 @@ kubectl run frontend-2 --image=nginx -l tier=frontend -n exam
 kubectl run backend-1 --image=nginx -l tier=backend -n exam
 
 # Create NetworkPolicy
-kubectl apply -f - <<'EOF' -n exam
+kubectl apply -n exam -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -280,12 +283,15 @@ spec:
           port: 80
 EOF
 
-# Verify (optional, if containers have curl/wget)
-kubectl exec -it frontend-1 -n exam -- wget -O- http://backend-1:80 --timeout=2
-# Should work
-
-kubectl exec -it $(kubectl get pod -l tier=frontend -n exam -o jsonpath='{.items[0].metadata.name}') -n exam -- wget -O- http://backend-1:80 --timeout=2
-# Should timeout or be denied (unless pod has internet)
+# Verify from a matching and non-matching source using a NetworkPolicy-capable CNI.
+kubectl run allowed-client --image=busybox:1.36 -n exam --labels=tier=frontend --command -- sleep 3600
+kubectl run blocked-client --image=busybox:1.36 -n exam --command -- sleep 3600
+kubectl wait --for=condition=Ready pod/allowed-client pod/blocked-client -n exam --timeout=60s
+backend_ip=$(kubectl get pod backend-1 -n exam -o jsonpath='{.status.podIP}')
+kubectl exec allowed-client -n exam -- wget -qO- --timeout=3 "http://${backend_ip}:80"
+# Expect a response.
+kubectl exec blocked-client -n exam -- wget -qO- --timeout=3 "http://${backend_ip}:80"
+# Expect timeout/failure.
 ```
 
 **Points:** 60/60
@@ -294,12 +300,9 @@ kubectl exec -it $(kubectl get pod -l tier=frontend -n exam -o jsonpath='{.items
 
 ---
 
-### Question 8 (7 min) — Hard: Deployment Debugging (CrashLoop)
+### Question 8 (7 min) — Hard: Deployment Repair (Image Pull + Probe)
 
-A Deployment named `broken-app` in namespace `exam` is stuck in CrashLoopBackOff.  
-The pods are crashing due to:
-1. Image doesn't exist (tag wrong)
-2. Liveness probe too aggressive
+A Deployment named `broken-app` in namespace `exam` has image `nginx:99.99` and a liveness probe on `/health` with `initialDelaySeconds: 1` and `periodSeconds: 1`. Correct the image to `nginx:1.27` and make the liveness probe check `/` with a 10-second initial delay and 5-second period.
 
 Debug and fix both issues.
 
@@ -309,19 +312,19 @@ Debug and fix both issues.
 ```bash
 # Step 1: Describe pod to see error
 kubectl describe pod <pod-name> -n exam | grep -A 5 "Events:"
-# Look for: ImagePullBackOff or probe failure
+# Inspect events and identify the image pull and probe configuration errors.
 
 # Step 2: Check logs
 kubectl logs <pod-name> -n exam
-# May show: container entry point error
+# Logs may be unavailable until the image is corrected.
 
 # Step 3: Get current image
 kubectl get deployment broken-app -n exam -o jsonpath='{.spec.template.spec.containers[0].image}'
-# Example output: nginx:99.99 (doesn't exist)
+# Expected current image: nginx:99.99
 
 # Fix 1: Set correct image
 kubectl set image deployment/broken-app \
-  broken-app=nginx:latest \
+  nginx=nginx:1.27 \
   -n exam
 
 # Fix 2: Get current probe settings
@@ -329,7 +332,7 @@ kubectl get deployment broken-app -n exam -o yaml | grep -A 5 "livenessProbe:"
 
 # Fix 2b: Edit deployment to increase initialDelaySeconds
 kubectl edit deployment broken-app -n exam
-# Change: initialDelaySeconds from 5 → 15 or 30
+# Set path to /, initialDelaySeconds to 10, and periodSeconds to 5.
 
 # Verify
 kubectl get pod -n exam -l app=broken-app
@@ -363,7 +366,7 @@ kubectl create configmap db-config \
   -n exam
 
 # Create Pod with env from ConfigMap
-kubectl apply -f - <<'EOF' -n exam
+kubectl apply -n exam -f - <<'EOF'
 apiVersion: v1
 kind: Pod
 metadata:
@@ -411,7 +414,7 @@ kubectl expose deployment api-server \
   -n exam
 
 # Step 3: Create NetworkPolicy
-kubectl apply -f - <<'EOF' -n exam
+kubectl apply -n exam -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -429,21 +432,17 @@ spec:
               allowed: "yes"
       ports:
         - protocol: TCP
-          port: 8080
+          port: 80
 EOF
 
-# Step 4: Verify (create test pods)
-kubectl run allowed-pod --image=nginx -l allowed=yes -n exam
-kubectl run blocked-pod --image=nginx -n exam
-
-# Test (if pods have curl)
-kubectl exec allowed-pod -n exam -- curl http://api-svc:8080 --timeout=2
-# May timeout due to network policy enforced by cluster CNI
-
-# At minimum, verify resources exist:
-kubectl get deployment api-server -n exam
-kubectl get svc api-svc -n exam
-kubectl get networkpolicy api-policy -n exam
+# Step 4: Verify from allowed and blocked clients (requires an enforcing CNI).
+kubectl run allowed-pod --image=busybox:1.36 -l allowed=yes -n exam --command -- sleep 3600
+kubectl run blocked-pod --image=busybox:1.36 -n exam --command -- sleep 3600
+kubectl wait --for=condition=Ready pod/allowed-pod pod/blocked-pod -n exam --timeout=60s
+kubectl exec allowed-pod -n exam -- wget -qO- --timeout=3 http://api-svc:8080
+# Expect an HTTP response.
+kubectl exec blocked-pod -n exam -- wget -qO- --timeout=3 http://api-svc:8080
+# Expect timeout/failure.
 ```
 
 **Points:** 80/80
@@ -454,8 +453,7 @@ kubectl get networkpolicy api-policy -n exam
 
 ### Question 11 (6 min) — Medium: Fix Broken Ingress
 
-An Ingress named `web-ingress` exists in namespace `exam` pointing to a service `web-svc`.  
-External requests get 503 Service Unavailable.
+An Ingress named `web-ingress` in namespace `exam` points to Service `web-svc` on port 80. The Service has selector `app=web` and port 80 targeting 8080. Two Ready Pods are labeled `app=frontend` and listen on 8080. The ingress controller is installed and the ingress class is correct, but external requests receive 503. Fix the cause without changing the Pods.
 
 Debug and fix. (Likely issues: selector mismatch or port mismatch)
 
@@ -476,15 +474,8 @@ kubectl get endpoints web-svc -n exam
 # Step 4: Check pod labels
 kubectl get pod -n exam --show-labels
 
-# Fix selector mismatch:
-kubectl edit svc web-svc -n exam
-# Ensure selector.app matches pod labels
-
-# Fix port mismatch in ingress:
-kubectl edit ingress web-ingress -n exam
-# Ensure backend.service.port.number = svc.spec.port (NOT targetPort)
-# Example: if web-svc has port: 80 targetPort: 8080
-# Ingress must use port: 80 (not 8080)
+# Patch the Service selector to match the Ready Pods.
+kubectl patch svc web-svc -n exam --type=merge -p '{"spec":{"selector":{"app":"frontend"}}}'
 
 # Verify:
 kubectl get endpoints web-svc -n exam
@@ -505,11 +496,9 @@ Add labels `app: myapp` and `environment: prod` to all Pods in namespace `exam` 
 <summary>Solution</summary>
 
 ```bash
-# Label all running pods
-kubectl label pod -l status=running app=myapp environment=prod -n exam --overwrite
-
-# Or label all pods (regardless of status)
-kubectl label pod --all app=myapp environment=prod -n exam --overwrite
+# Select Pods by their status phase, then label only the returned Pod names.
+kubectl get pods -n exam --field-selector=status.phase=Running -o name |
+  xargs -r kubectl label -n exam --overwrite app=myapp environment=prod
 
 # Verify
 kubectl get pod -n exam --show-labels | grep myapp
@@ -523,8 +512,7 @@ kubectl get pod -n exam --show-labels | grep myapp
 
 ### Question 13 (5 min) — Medium: RBAC Verify + Debug
 
-ServiceAccount `writer-sa` exists in namespace `exam`.  
-It should have permission to create Deployments but NOT delete them.
+ServiceAccount `writer-sa` exists in namespace `exam`. Role `writer-role` is bound to it and its first rule grants `create`, `get`, `list`, and `delete` on Deployments, in that order. It should be able to create Deployments but not delete them. Remove only the excessive permission and verify both outcomes.
 
 Verify the permissions. If wrong, fix it.
 
@@ -532,8 +520,8 @@ Verify the permissions. If wrong, fix it.
 <summary>Solution</summary>
 
 ```bash
-# Check current role binding
-kubectl get rolebinding -n exam --all-namespaces | grep writer-sa
+# Check the namespaced role binding
+kubectl get rolebinding -n exam -o yaml | grep -A 8 writer-sa
 
 # Check what role is bound
 kubectl get role -n exam | grep -i writer
@@ -554,7 +542,7 @@ kubectl auth can-i delete deployments \
 
 # If delete is allowed but shouldn't be:
 kubectl edit role writer-role -n exam
-# Remove "delete" from verbs (keep only "create", "get", "list", etc.)
+# In rules[0].verbs, remove delete and keep create, get, list.
 ```
 
 **Points:** 50/50
@@ -565,32 +553,37 @@ kubectl edit role writer-role -n exam
 
 ### Question 14 (6 min) — Medium: StatefulSet + Persistent Volume (Intro)
 
-Create a StatefulSet named `database` in namespace `exam` with:
+Create a StatefulSet named `database` in namespace `exam` with a headless Service named `database` and one replica:
 - Image: `postgres:13`
 - Replicas: 1
-- Volume: PVC named `db-storage` (1Gi, ReadWriteOnce)
+- Persistent volume claim template named `db-storage` (1Gi, ReadWriteOnce)
 - Container volumeMount path: `/var/lib/postgresql/data`
+- Provide the required `POSTGRES_PASSWORD` through a Secret and verify the Pod becomes Ready.
 
 <details>
 <summary>Solution (Simplified)</summary>
 
 ```bash
-# Create PVC first
-kubectl apply -f - <<'EOF' -n exam
+# Create namespace-local PostgreSQL credentials.
+kubectl create secret generic database-secret --from-literal=POSTGRES_PASSWORD='practice-only' -n exam
+
+# Create the governing headless Service first.
+kubectl apply -n exam -f - <<'EOF'
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service
 metadata:
-  name: db-storage
+  name: database
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+  clusterIP: None
+  selector:
+    app: database
+  ports:
+  - port: 5432
+    targetPort: 5432
 EOF
 
 # Create StatefulSet
-kubectl apply -f - <<'EOF' -n exam
+kubectl apply -n exam -f - <<'EOF'
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -609,6 +602,12 @@ spec:
       containers:
       - name: postgres
         image: postgres:13
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: POSTGRES_PASSWORD
         volumeMounts:
         - name: db-storage
           mountPath: /var/lib/postgresql/data
@@ -626,6 +625,7 @@ EOF
 # Verify
 kubectl get statefulset database -n exam
 kubectl get pvc -n exam
+kubectl wait --for=condition=Ready pod/database-0 -n exam --timeout=180s
 ```
 
 **Points:** 60/60
@@ -670,10 +670,11 @@ kubectl get deployment web-app -n exam -o jsonpath='{.metadata.annotations}'
 
 | Score | Assessment |
 |-------|------------|
-| 80-100% | ✅ Ready for real exam |
-| 70-79% | ✅ Likely to pass (prepare weak spots) |
-| 60-69% | ⚠️ Need more practice (focus on patterns) |
-| <60% | ❌ Not ready; review patterns, practice timed exercises |
+| 85-100% | Strong result on this practice set; still review missed requirements |
+| 66-84% | Review weak domains and retake missed tasks |
+| Below 66% | Revisit related exercises, then retake under timed conditions |
+
+These bands describe this practice set only. They are not a prediction of the official exam result.
 
 ---
 
@@ -685,7 +686,7 @@ After completing this mock exam:
 2. **Identify problem areas** (RBAC? Networking? Deployments?)
 3. **Review corresponding pattern file** (patterns/rbac-debug.md, etc.)
 4. **Redo the question** the next day
-5. **Time yourself** — aim for 10% faster than before
+5. **Time yourself** — aim to finish the 15-task set within two hours, leaving time to verify high-value work
 
-Repeat until all questions can be completed in <1 min each.
+Repeat missed tasks until you can complete and verify them reliably under time pressure.
 

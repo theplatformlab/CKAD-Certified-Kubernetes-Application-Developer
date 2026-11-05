@@ -1,24 +1,26 @@
 # CKAD Mock Exam 01 — 2 Hours, 15 Questions
 
-**Kubernetes Version:** v1.35  
+**Practice Kubernetes Version:** v1.37
 **Exam Duration:** 120 minutes  
-**Passing Score:** 66% (≈49/73 points)  
+**Available Practice Points:** 63
+**Practice Threshold:** 42/63 points (about 67%); this is not an official exam pass prediction.
 **Format:** Performance-based tasks with weighted scoring
 
 ---
 
 ## Instructions
 
-- Each question has a percentage weight (adds up to 73% total for this mock)
+- Bracketed values are relative practice points, not percentages of the live exam; they add up to 63 points.
 - Use only `kubernetes.io/docs`, `kubernetes.io/blog`, and `github.com/kubernetes` for reference
-- Switch context before every question: `kubectl config use-context <context>`
-- Set namespace first: `kubectl config set-context --current --namespace=<namespace>`
-- Time yourself: aim for 5–8 minutes per task
+- Use the context stated in each task when it exists. For local practice, use one disposable cluster rather than switching to nonexistent sample contexts.
+- Create a task namespace if it does not already exist. Namespace setup does not count toward task time.
+- A NetworkPolicy-capable CNI is required for Q8. An Ingress controller/class is required for Q10. A `fast` StorageClass is required for Q15.
+- Time yourself: aim for about 5–8 minutes per task; use the stated budget as a guide, not a guarantee.
 - Verify your work before moving to the next question
 
 ---
 
-## Question 1 [3%] [Design & Build] Easy
+## Question 1 [3 pts] [Design & Build] Easy
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `default`
@@ -33,38 +35,40 @@ kubectl get pod web-pod -o yaml | grep -A 5 "resources\|labels"
 
 ---
 
-## Question 2 [4%] [Design & Build] Medium
+## Question 2 [4 pts] [Design & Build] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `backend`
 
 **Task:**  
 Create a multi-container Pod named `app-stack` in namespace `backend` with:
-- Init container `init-db` using image `busybox` that waits 2 seconds
-- Main container `app` using image `nginx:1.25`
-- Main container `redis` using image `redis:7`
+- Init container `init-db` using `busybox:1.36` that writes `ready` to `/shared/status` and exits
+- Main container `app` using `busybox:1.36` that appends a timestamp to `/shared/app.log` every 5 seconds
+- Sidecar `log-agent` using `busybox:1.36` that follows `/shared/app.log`
+- One `emptyDir` named `shared`, mounted at `/shared` in all three containers
+- CPU request `50m` and memory request `64Mi` for each container
 
-All containers should have CPU request `50m` and memory request `64Mi`.
+Verify the Pod is Ready and `kubectl logs app-stack -n backend -c log-agent` shows the app timestamps.
 
 ---
 
-## Question 3 [5%] [Design & Build] Hard
+## Question 3 [5 pts] [Design & Build] Hard
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `dev`
 
 **Task:**  
 Create a Pod named `init-pod` in namespace `dev` with:
-- Init container `download` using image `busybox` that downloads a file to `/data/startup.sh`
+- Init container `prepare` using image `busybox:1.36` that creates an executable `/data/startup.sh`
 - Main container `runner` using image `alpine` that runs the script
 - emptyDir volume mounted at `/data`
 - SecurityContext: runAsUser 1000, fsGroup 2000
 
-Make the init container run: `echo '#!/bin/sh' > /data/startup.sh && echo 'echo "App started"' >> /data/startup.sh && chmod +x /data/startup.sh`
+Make the init container run: `printf '#!/bin/sh\\necho App-started\\n' > /data/startup.sh && chmod +x /data/startup.sh`. The runner must execute the script and remain alive for verification.
 
 ---
 
-## Question 4 [4%] [Deployment] Medium
+## Question 4 [4 pts] [Deployment] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `production`
@@ -74,7 +78,7 @@ Create a Deployment named `web-app` in namespace `production` with:
 - Image: `nginx:1.25`
 - Replicas: 3
 - Rolling update strategy: `maxSurge=1`, `maxUnavailable=0`
-- Labels: `app=web`, `version=v1`
+- Pod-template labels: `app=web`, `version=v1` (the Deployment selector must match)
 
 Verify:
 ```bash
@@ -83,7 +87,7 @@ kubectl rollout status deployment/web-app -n production
 
 ---
 
-## Question 5 [3%] [Deployment] Easy
+## Question 5 [3 pts] [Deployment] Easy
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `apps`
@@ -91,14 +95,14 @@ kubectl rollout status deployment/web-app -n production
 **Task:**  
 Create a Deployment named `api` in namespace `apps` with 2 replicas using `nginx:1.24`. Update the image to `nginx:1.25`. Then perform a rollback to the previous version.
 
-Expected output — check rollout history:
+Verify the rollout completed, the history contains the update, and the final image is `nginx:1.24`.
 ```bash
 kubectl rollout history deployment/api -n apps
 ```
 
 ---
 
-## Question 6 [5%] [Configuration] Medium
+## Question 6 [5 pts] [Configuration] Medium
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `config-test`
@@ -121,7 +125,7 @@ kubectl exec config-pod -n config-test -- env | grep DATABASE
 
 ---
 
-## Question 7 [4%] [Configuration] Medium
+## Question 7 [4 pts] [Configuration] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `secrets-ns`
@@ -140,7 +144,7 @@ kubectl exec secret-pod -n secrets-ns -- ls -la /etc/secrets/
 
 ---
 
-## Question 8 [5%] [Networking] Hard
+## Question 8 [5 pts] [Networking] Hard
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `network-test`
@@ -155,7 +159,7 @@ Create a NetworkPolicy named `restrict-traffic` in namespace `network-test` that
 
 ---
 
-## Question 9 [4%] [Networking] Medium
+## Question 9 [4 pts] [Networking] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `web`
@@ -173,20 +177,20 @@ kubectl get endpoints web-service -n web
 
 ---
 
-## Question 10 [5%] [Networking] Hard
+## Question 10 [5 pts] [Networking] Hard
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `ingress-test`
 
 **Task:**  
-Create an Ingress resource named `app-ingress` in namespace `ingress-test` that:
+Create two one-replica Deployments and matching ClusterIP Services in namespace `ingress-test`: `api-svc` listens on Service port 8080 and targets container port 80; `web-svc` listens on port 80 and targets port 80. Then create an Ingress named `app-ingress` that:
 - Uses ingressClassName: `nginx`
 - Routes `app.example.com/api` to Service `api-svc` on port 8080
 - Routes `app.example.com/web` to Service `web-svc` on port 80
 
 ---
 
-## Question 11 [3%] [RBAC] Easy
+## Question 11 [3 pts] [RBAC] Easy
 
 **Context:** `kubectl config use-context k8s-cluster1`
 
@@ -201,17 +205,19 @@ kubectl auth can-i list pods -n dev --as=system:serviceaccount:dev:developer
 
 ---
 
-## Question 12 [4%] [RBAC] Medium
+## Question 12 [4 pts] [RBAC] Medium
 
 **Context:** `kubectl config use-context k8s-cluster2`
 
 **Task:**  
 1. Create a ClusterRole named `deployment-manager` that allows `get`, `list`, `create`, `update`, `patch` on Deployments cluster-wide
-2. Create a ClusterRoleBinding named `deploy-admin` that binds this ClusterRole to ServiceAccount `admin` in namespace `default`
+2. Create ServiceAccount `admin` in namespace `default` if missing.
+3. Create a ClusterRoleBinding named `deploy-admin` that binds this ClusterRole to that ServiceAccount.
+4. Verify it can patch Deployments cluster-wide but cannot delete them.
 
 ---
 
-## Question 13 [5%] [Security] Hard
+## Question 13 [5 pts] [Security] Hard
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `secure`
@@ -226,10 +232,11 @@ Create a Pod named `secure-app` in namespace `secure` with:
   - capabilities: drop ALL
   - readOnlyRootFilesystem: true
 - A ConfigMap volume mounted at `/config` (mount any existing ConfigMap or create one)
+- Run a read-only-safe command long enough to inspect the running Pod; do not rely on the image's default command.
 
 ---
 
-## Question 14 [4%] [Observability] Medium
+## Question 14 [4 pts] [Observability] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `monitoring`
@@ -237,8 +244,8 @@ Create a Pod named `secure-app` in namespace `secure` with:
 **Task:**  
 1. Create a Pod named `health-check` with:
    - Image: `nginx:1.25`
-   - Liveness probe: HTTP GET on port 80, path `/health`, initialDelaySeconds=10, periodSeconds=5
-   - Readiness probe: HTTP GET on port 80, path `/ready`, initialDelaySeconds=5, periodSeconds=3
+   - Liveness probe: HTTP GET on port 80, path `/`, initialDelaySeconds=10, periodSeconds=5
+   - Readiness probe: HTTP GET on port 80, path `/`, initialDelaySeconds=5, periodSeconds=3
 
 2. Verify the probes are configured:
 ```bash
@@ -247,7 +254,7 @@ kubectl describe pod health-check -n monitoring | grep -A 3 "Liveness\|Readiness
 
 ---
 
-## Question 15 [5%] [Design & Build] Hard
+## Question 15 [5 pts] [Design & Build] Hard
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `advanced`
@@ -262,6 +269,8 @@ Create a StatefulSet named `db-app` in namespace `advanced` with:
 - Environment variables from a ConfigMap:
   - `POSTGRES_DB=mydb`
   - `POSTGRES_USER=admin`
+- A Secret provides the required `POSTGRES_PASSWORD`; mount one PVC per replica through `volumeClaimTemplates`.
+- Create the headless Service named `db-service` required by the StatefulSet.
 
 ---
 
@@ -273,7 +282,7 @@ Create a StatefulSet named `db-app` in namespace `advanced` with:
 **Namespace:** `broken-apps`
 
 **Task:**  
-A Pod named `image-test` in namespace `broken-apps` is stuck in `ImagePullBackOff` state. The Pod spec references image `private-registry/app:v2.0` but you need to use the public image `nginx:1.25` instead.
+A Pod named `image-test` in namespace `broken-apps` is stuck in `ImagePullBackOff` state because it references `private-registry/app:v2.0`. Change its image to `nginx:1.25` without deleting the Pod, then verify the same Pod UID becomes Ready.
 
 Troubleshoot and fix without recreating the Pod. Hint: Check pod events with `kubectl describe pod image-test -n broken-apps`
 
@@ -285,7 +294,7 @@ Troubleshoot and fix without recreating the Pod. Hint: Check pod events with `ku
 **Namespace:** `app-errors`
 
 **Task:**  
-Deployment `data-processor` in namespace `app-errors` is running but logs show: `Error: ConfigMap key DATABASE_URL not found`. The ConfigMap `app-config` exists with key `DB_URL` (not `DATABASE_URL`). Fix the Deployment to use the correct key without recreating pods.
+Deployment `data-processor` in namespace `app-errors` is not Ready because its container requests ConfigMap key `DATABASE_URL`, while ConfigMap `app-config` contains `DB_URL`. Correct the Deployment's key reference and verify the replacement Pod becomes Ready and logs success. A rollout is expected because environment-variable references are resolved when a container starts.
 
 Verification: `kubectl logs -n app-errors <pod> | grep success`
 
@@ -295,40 +304,40 @@ Verification: `kubectl logs -n app-errors <pod> | grep success`
 
 Copy this table and track your score:
 
-| Q | Domain | Weight | Easy/Med/Hard | Score | Points |
-|---|--------|--------|---------------|-------|--------|
-| 1 | Design & Build | 3% | Easy | __ | /3 |
-| 2 | Design & Build | 4% | Medium | __ | /4 |
-| 3 | Design & Build | 5% | Hard | __ | /5 |
-| 4 | Deployment | 4% | Medium | __ | /4 |
-| 5 | Deployment | 3% | Easy | __ | /3 |
-| 6 | Configuration | 5% | Medium | __ | /5 |
-| 7 | Configuration | 4% | Medium | __ | /4 |
-| 8 | Networking | 5% | Hard | __ | /5 |
-| 9 | Networking | 4% | Medium | __ | /4 |
-| 10 | Networking | 5% | Hard | __ | /5 |
-| 11 | RBAC | 3% | Easy | __ | /3 |
-| 12 | RBAC | 4% | Medium | __ | /4 |
-| 13 | Security | 5% | Hard | __ | /5 |
-| 14 | Observability | 4% | Medium | __ | /4 |
-| 15 | Design & Build | 5% | Hard | __ | /5 |
-| | **Total** | **73%** | | | **__/73** |
+| Q | Domain | Practice points | Difficulty | Score |
+|---|--------|-----------------|------------|-------|
+| 1 | Design & Build | 3 | Easy | __/3 |
+| 2 | Design & Build | 4 | Medium | __/4 |
+| 3 | Design & Build | 5 | Hard | __/5 |
+| 4 | Deployment | 4 | Medium | __/4 |
+| 5 | Deployment | 3 | Easy | __/3 |
+| 6 | Configuration | 5 | Medium | __/5 |
+| 7 | Configuration | 4 | Medium | __/4 |
+| 8 | Networking | 5 | Hard | __/5 |
+| 9 | Networking | 4 | Medium | __/4 |
+| 10 | Networking | 5 | Hard | __/5 |
+| 11 | RBAC | 3 | Easy | __/3 |
+| 12 | RBAC | 4 | Medium | __/4 |
+| 13 | Security | 5 | Hard | __/5 |
+| 14 | Observability | 4 | Medium | __/4 |
+| 15 | Design & Build | 5 | Hard | __/5 |
+| | **Total** | **63** | | **__/63** |
 
-**Passing Score:** 48+ points (66%)  
-**Strong Score:** 58+ points (80%)  
-**Excellent:** 68+ points (93%)
+**Practice threshold:** 42+ points (66% of available points)
+**Strong practice result:** 51+ points (80%)
+**High practice result:** 59+ points (about 94%)
 
 ### Domain Breakdown
 
-| Domain | Questions | Weight | Your Score |
+| Domain | Questions | Available points | Your Score |
 |--------|-----------|--------|-----------|
-| Design & Build | 1, 2, 3, 15 | 17% | __/17 |
-| Deployment | 4, 5 | 7% | __/7 |
-| Configuration | 6, 7 | 9% | __/9 |
-| Networking | 8, 9, 10 | 14% | __/14 |
-| RBAC | 11, 12 | 7% | __/7 |
-| Security | 13 | 5% | __/5 |
-| Observability | 14 | 4% | __/4 |
+| Design & Build | 1, 2, 3, 15 | 17 | __/17 |
+| Deployment | 4, 5 | 7 | __/7 |
+| Configuration | 6, 7 | 9 | __/9 |
+| Networking | 8, 9, 10 | 14 | __/14 |
+| RBAC | 11, 12 | 7 | __/7 |
+| Security | 13 | 5 | __/5 |
+| Observability | 14 | 4 | __/4 |
 
 If any domain is <50%, review that domain and redo those questions in 1 week.
 

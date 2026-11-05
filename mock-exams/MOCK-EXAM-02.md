@@ -1,30 +1,32 @@
 # CKAD Mock Exam 02 — 2 Hours, 16 Questions
 
-**Kubernetes Version:** v1.35  
+**Practice Kubernetes Version:** v1.37
 **Exam Duration:** 120 minutes  
-**Passing Score:** 66% (≈53/80 points)  
+**Available Practice Points:** 67
+**Practice Threshold:** 45/67 points (about 67%); this is not an official exam pass prediction.
 **Format:** Performance-based tasks with weighted scoring
 
 ---
 
 ## Instructions
 
-- Each question has a percentage weight (adds up to 80% total for this mock)
+- Bracketed values are relative practice points, not percentages of the live exam; they add up to 67 points.
 - Use only `kubernetes.io/docs`, `kubernetes.io/blog`, and `github.com/kubernetes` for reference
-- Switch context before every question: `kubectl config use-context <context>`
-- Set namespace first: `kubectl config set-context --current --namespace=<namespace>`
-- Time yourself: aim for 5–8 minutes per task
+- Use the context stated in each task when it exists. For local practice, use one disposable cluster rather than switching to nonexistent sample contexts.
+- Create a task namespace if it does not already exist. Namespace setup does not count toward task time.
+- A NetworkPolicy-capable CNI is required for Q8. A Gateway API controller and Gateway are required for Q10. A multi-node cluster is required to exercise Q16's control-plane toleration.
+- Time yourself: aim for about 5–8 minutes per task; use the stated budget as a guide, not a guarantee.
 - Verify your work before moving to the next question
 
 ---
 
-## Question 1 [3%] [Design & Build] Easy
+## Question 1 [3 pts] [Design & Build] Easy
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `default`
 
 **Task:**  
-Create a Pod named `app-pod` using image `alpine:3.18`. Add environment variables:
+Create a Pod named `app-pod` using image `alpine:3.18` with a command that keeps it running for verification. Add environment variables:
 - `APP_NAME=MyApp`
 - `ENVIRONMENT=production`
 - `DEBUG=false`
@@ -33,7 +35,7 @@ Verify the environment variables are set when you exec into the pod.
 
 ---
 
-## Question 2 [4%] [Design & Build] Medium
+## Question 2 [4 pts] [Design & Build] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `dev`
@@ -43,25 +45,27 @@ Create a Pod with a volume that is shared between two containers:
 - Main container: `app` using image `nginx:1.25`
 - Sidecar container: `log-collector` using image `busybox`
 - emptyDir volume named `shared`: mounted at `/data` in both containers
-- Sidecar command: `tail -f /data/access.log`
+- The app container writes timestamped lines to `/data/access.log` every 3 seconds
+- The sidecar follows that file and emits its lines to stdout
+- Verify the sidecar logs contain timestamps
 
 ---
 
-## Question 3 [5%] [Design & Build] Hard
+## Question 3 [5 pts] [Design & Build] Hard
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `staging`
 
 **Task:**  
 Create a Pod named `worker-job` with:
-- Init container that downloads data using `curl` to `/data/input.zip`
-- Main container `processor` using image `alpine` that processes the data
+- Init container `prepare` using `busybox:1.36` that writes `sample-payload` to `/data/input.txt`
+- Main container `processor` using `busybox:1.36` that reads the input, writes `processed: sample-payload` to `/data/output.txt`, then stays running
 - Persistent storage: use an existing PVC named `work-pvc` mounted at `/data`
 - Add `restartPolicy: OnFailure`
 
 ---
 
-## Question 4 [4%] [Deployment] Medium
+## Question 4 [4 pts] [Deployment] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `web`
@@ -72,11 +76,11 @@ Create a Deployment named `frontend` with:
 - Image: `nginx:1.25`
 - Pod labels: `app=frontend`, `version=v2.0`
 - Readiness probe: HTTP GET `/`, port 80, initialDelaySeconds=5
-- Liveness probe: HTTP GET `/health`, port 80, initialDelaySeconds=10
+- Liveness probe: HTTP GET `/`, port 80, initialDelaySeconds=10
 
 ---
 
-## Question 5 [3%] [Deployment] Easy
+## Question 5 [3 pts] [Deployment] Easy
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `production`
@@ -86,7 +90,7 @@ Create a Deployment named `backend` with 2 replicas using image `node:18-alpine`
 
 ---
 
-## Question 6 [5%] [Configuration] Hard
+## Question 6 [5 pts] [Configuration] Hard
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `config`
@@ -103,7 +107,7 @@ Create a Deployment named `backend` with 2 replicas using image `node:18-alpine`
 
 ---
 
-## Question 7 [4%] [Configuration] Medium
+## Question 7 [4 pts] [Configuration] Medium
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `database`
@@ -115,10 +119,11 @@ Create a StatefulSet named `postgres` with:
 - ConfigMap with: `POSTGRES_DB=appdb`, `POSTGRES_USER=dbadmin`
 - Secret with: `POSTGRES_PASSWORD=SecurePass123`
 - ServiceName: `postgres-service`
+- Create the required headless Service and supply `POSTGRES_PASSWORD` from the Secret. Use a 1Gi PVC template so each replica gets its own volume; assume a default StorageClass is available.
 
 ---
 
-## Question 8 [5%] [Networking] Hard
+## Question 8 [5 pts] [Networking] Hard
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `mesh`
@@ -131,10 +136,12 @@ Create a NetworkPolicy named `isolate-backend` that:
 - Denies all other ingress
 - Allows egress to database on port 5432
 - Allows DNS egress
+- Create one backend Pod listening on 8080, frontend and admin source Pods, and a database Pod listening on 5432, with the corresponding labels above.
+- Assume a NetworkPolicy-capable CNI; verify allowed and denied connections from the source Pods.
 
 ---
 
-## Question 9 [4%] [Networking] Medium
+## Question 9 [4 pts] [Networking] Medium
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `api`
@@ -148,12 +155,13 @@ Create a NetworkPolicy named `isolate-backend` that:
 
 ---
 
-## Question 10 [5%] [Networking] Hard
+## Question 10 [5 pts] [Networking] Hard
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `routing`
 
 **Task:**  
+Assume Gateway `main-gateway` exists in namespace `routing`, and Services `api-backend:8080` and `static-server:80` have ready endpoints.
 Create a Gateway API HTTPRoute named `app-route` that:
 - Routes traffic for host `myapp.internal`
 - Path `/api/v1/*` goes to Service `api-backend` on port 8080
@@ -162,18 +170,18 @@ Create a Gateway API HTTPRoute named `app-route` that:
 
 ---
 
-## Question 11 [3%] [RBAC] Easy
+## Question 11 [3 pts] [RBAC] Easy
 
 **Context:** `kubectl config use-context k8s-cluster1`
 
 **Task:**  
 1. Create a ServiceAccount named `app-reader` in namespace `apps`
-2. Create a ClusterRole named `pod-lister` that allows `list` on Pods
+2. Create a ClusterRole named `pod-lister` that allows `get`, `list`, and `watch` on Pods
 3. Create a ClusterRoleBinding named `app-reader-pods` that binds the role to the ServiceAccount
 
 ---
 
-## Question 12 [4%] [RBAC] Medium
+## Question 12 [4 pts] [RBAC] Medium
 
 **Context:** `kubectl config use-context k8s-cluster2`
 
@@ -182,12 +190,13 @@ Create RBAC for a developer who needs to:
 - In namespace `dev`: get, list, create, update, delete Deployments
 - In namespace `dev`: get, list ConfigMaps
 - Outside namespace `dev`: read-only access to Pods (all namespaces)
+- Verify allowed and denied verbs, including `watch` on Pods and `delete` on Deployments.
 
 Use a ServiceAccount named `developer` in namespace `dev`.
 
 ---
 
-## Question 13 [5%] [Security] Hard
+## Question 13 [5 pts] [Security] Hard
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `secure`
@@ -202,12 +211,12 @@ Create a Pod named `restricted` with comprehensive security hardening:
   - capabilities: drop ALL
   - allowPrivilegeEscalation: false
   - readOnlyRootFilesystem: true
-- Image: `nginx:1.25`
-- tmpfs volume mounted at `/tmp` (for nginx to write temporary files)
+- Image: `nginxinc/nginx-unprivileged:1.27-alpine`
+- memory-backed `emptyDir` mounted at `/tmp`; expose container port 8080 and verify the non-root server responds successfully.
 
 ---
 
-## Question 14 [4%] [Observability] Medium
+## Question 14 [4 pts] [Observability] Medium
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `monitoring`
@@ -218,7 +227,7 @@ Create a Pod named `restricted` with comprehensive security hardening:
    - Command: `sh -c 'while true; do echo "$(date): Processing..."; sleep 2; done'`
    - No restartPolicy (default)
 
-2. Get the logs from the last 10 seconds:
+2. Get the logs from the last 10 seconds, limited to five lines, and include timestamps:
 ```bash
 kubectl logs log-generator -n monitoring --tail=5
 kubectl logs log-generator -n monitoring --timestamps=true
@@ -226,7 +235,7 @@ kubectl logs log-generator -n monitoring --timestamps=true
 
 ---
 
-## Question 15 [4%] [Design & Build] Medium
+## Question 15 [4 pts] [Design & Build] Medium
 
 **Context:** `kubectl config use-context k8s-cluster1`  
 **Namespace:** `jobs`
@@ -242,7 +251,7 @@ Create a CronJob named `backup-job` that:
 
 ---
 
-## Question 16 [5%] [Design & Build] Hard
+## Question 16 [5 pts] [Design & Build] Hard
 
 **Context:** `kubectl config use-context k8s-cluster2`  
 **Namespace:** `advanced`
@@ -260,7 +269,7 @@ Create a DaemonSet named `node-monitor` that:
 
 ---
 
-## Question 17+ (Bonus Debugging Scenarios) — For Practice Beyond Exam
+## Bonus Debugging Scenarios — Not Included in the 67-point Score
 
 ### Question 17B [Debugging] — Service with Incorrect Label Selector
 
@@ -290,41 +299,41 @@ Hint: Check `kubectl describe pod` under Events section for PVC pending reason.
 
 Copy this table and track your score:
 
-| Q | Domain | Weight | Easy/Med/Hard | Score | Points |
-|---|--------|--------|---------------|-------|--------|
-| 1 | Design & Build | 3% | Easy | __ | /3 |
-| 2 | Design & Build | 4% | Medium | __ | /4 |
-| 3 | Design & Build | 5% | Hard | __ | /5 |
-| 4 | Deployment | 4% | Medium | __ | /4 |
-| 5 | Deployment | 3% | Easy | __ | /3 |
-| 6 | Configuration | 5% | Hard | __ | /5 |
-| 7 | Configuration | 4% | Medium | __ | /4 |
-| 8 | Networking | 5% | Hard | __ | /5 |
-| 9 | Networking | 4% | Medium | __ | /4 |
-| 10 | Networking | 5% | Hard | __ | /5 |
-| 11 | RBAC | 3% | Easy | __ | /3 |
-| 12 | RBAC | 4% | Medium | __ | /4 |
-| 13 | Security | 5% | Hard | __ | /5 |
-| 14 | Observability | 4% | Medium | __ | /4 |
-| 15 | Design & Build | 4% | Medium | __ | /4 |
-| 16 | Design & Build | 5% | Hard | __ | /5 |
-| | **Total** | **80%** | | | **__/80** |
+| Q | Domain | Practice points | Difficulty | Score |
+|---|--------|-----------------|------------|-------|
+| 1 | Design & Build | 3 | Easy | __/3 |
+| 2 | Design & Build | 4 | Medium | __/4 |
+| 3 | Design & Build | 5 | Hard | __/5 |
+| 4 | Deployment | 4 | Medium | __/4 |
+| 5 | Deployment | 3 | Easy | __/3 |
+| 6 | Configuration | 5 | Hard | __/5 |
+| 7 | Configuration | 4 | Medium | __/4 |
+| 8 | Networking | 5 | Hard | __/5 |
+| 9 | Networking | 4 | Medium | __/4 |
+| 10 | Networking | 5 | Hard | __/5 |
+| 11 | RBAC | 3 | Easy | __/3 |
+| 12 | RBAC | 4 | Medium | __/4 |
+| 13 | Security | 5 | Hard | __/5 |
+| 14 | Observability | 4 | Medium | __/4 |
+| 15 | Design & Build | 4 | Medium | __/4 |
+| 16 | Design & Build | 5 | Hard | __/5 |
+| | **Total** | **67** | | **__/67** |
 
-**Passing Score:** 53+ points (66%)  
-**Strong Score:** 64+ points (80%)  
-**Excellent:** 74+ points (93%)
+**Practice threshold:** 45+ points (66% of available points)
+**Strong practice result:** 54+ points (80%)
+**High practice result:** 63+ points (about 94%)
 
 ### Domain Breakdown
 
-| Domain | Questions | Weight | Your Score |
+| Domain | Questions | Available points | Your Score |
 |--------|-----------|--------|-----------|
-| Design & Build | 1, 2, 3, 15, 16 | 21% | __/21 |
-| Deployment | 4, 5 | 7% | __/7 |
-| Configuration | 6, 7 | 9% | __/9 |
-| Networking | 8, 9, 10 | 14% | __/14 |
-| RBAC | 11, 12 | 7% | __/7 |
-| Security | 13 | 5% | __/5 |
-| Observability | 14 | 4% | __/4 |
+| Design & Build | 1, 2, 3, 15, 16 | 21 | __/21 |
+| Deployment | 4, 5 | 7 | __/7 |
+| Configuration | 6, 7 | 9 | __/9 |
+| Networking | 8, 9, 10 | 14 | __/14 |
+| RBAC | 11, 12 | 7 | __/7 |
+| Security | 13 | 5 | __/5 |
+| Observability | 14 | 4 | __/4 |
 
 ---
 

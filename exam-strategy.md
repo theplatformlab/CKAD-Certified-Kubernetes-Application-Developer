@@ -1,17 +1,17 @@
 # CKAD Exam Strategy — Time Management & Mental Checklist
 
-**Duration:** 2 hours for ~15-20 tasks  
-**Passing:** 66% (≈11 correct questions)  
-**Difficulty:** Medium; time pressure is the main challenge, not concepts
+**Duration:** 2 hours; the official exam does not publish a fixed task count
+**Passing score:** 66%, according to the official FAQ checked November 5, 2026. Recheck the [official exam FAQ](https://docs.linuxfoundation.org/tc-docs/certification/faq-cka-ckad-cks) before your appointment.
+**Practice note:** Mock scores and this time plan are study aids, not readiness predictions.
 
 ---
 
 ## Pre-Exam Week
 
-### Days 1-3: Pattern Memorization
-- Read each pattern file in `/patterns/` once
-- Practice each pattern 2-3× from memory
-- Build muscle memory for commands
+### Days 1-3: Recall and Practice
+- Attempt a task before reading its solution.
+- Use a pattern file to understand the workflow, then repeat the task from a clean state.
+- Practice recalling the next diagnostic command, not just memorizing command strings.
 
 ### Days 4-5: Timed Exercises  
 - Do timed tasks; aim for <2 min per 2-min task
@@ -19,7 +19,7 @@
 - Identify which tasks you're slowest on
 
 ### Day 6: Mock Exam
-- Take full mock exam in `/mock-exam/` without interruption
+- Choose a written mock from [`mock-exams/README.md`](mock-exams/README.md) and take it without interruption
 - Time yourself strictly
 - Score yourself
 
@@ -33,33 +33,24 @@
 ## Exam Day — Time Budget
 
 ```
-Total: 120 minutes
-Average per task: 6-8 minutes (some easier, some harder)
+The official exam allows two hours, but the task count and point values can vary. Read the value shown for each task in your exam interface and pace yourself against the remaining time. Do not assume every task should take the same number of minutes.
 
-Expected breakdown:
-- Questions 1-3: Easy tasks (2-3 min each) = 9 min
-- Questions 4-8: Medium tasks (5 min each) = 25 min
-- Questions 9-12: Hard tasks (8-10 min each) = 35 min
-- Remaining time: 51 minutes (buffer for review/hard questions) ✓
-
-Rule of thumb: Spend max 10 min per question.
-After 10 min, either move on or mark for later.
+For practice, try a two-pass approach: bank work you can verify, mark a task when you have no useful next step, then return if time remains. Adjust the cutoff based on the task's value and the work left.
 ```
 
 ---
 
 ## Strategy: When to Skip (Critical)
 
-### SKIP If:
-- ❌ You're stuck for 3+ minutes with no progress
-- ❌ Part of question seems impossible (you might be misreading it)
-- ❌ Syntax keeps failing and you can't debug
-- ❌ You're second-guessing yourself (bad sign; move on)
+### Pause and Reassess If:
+- You have made no progress after several attempts; reread the requirements and inspect the resource state.
+- A dependency appears missing; determine whether the task expects you to create it or whether the environment has a prerequisite.
+- You are repeating the same failing command; check the error, namespace, selector, and resource schema before trying again.
 
-### DO NOT SKIP If:
-- ✅ You know how to solve it but typing is slow
-- ✅ You're 80% done and close to working
-- ✅ It's worth double-checking (RBAC permissions)
+### Keep Working If:
+- You have a specific next diagnostic step.
+- You can complete one independently verifiable part of a multi-part task.
+- A quick check can confirm or rule out your current hypothesis.
 
 ---
 
@@ -114,7 +105,7 @@ Before hitting Enter, verify:
 - [ ] Image exists (check docker registry)
 - [ ] Ports match (container ↔ service ↔ ingress)
 - [ ] Labels match service selector
-- [ ] Probes not too aggressive (initialDelaySeconds 15+)
+- [ ] Probe paths and timing fit the actual container startup and health behavior
 - [ ] Replicas correct
 
 ### NetworkPolicy
@@ -211,8 +202,5 @@ k get endpoints <svc>  # If empty = selector wrong
 
 ## Last Reminder
 
-**60% of questions are debugging** (fix broken deployments, RBAC, networking).  
-**You progress by recognizing patterns, not by memorizing.**
-
-The patterns/ directory has everything you need. Internalize them before the exam.
+The exact task mix is not published as a fixed blueprint. Practice both creating resources and diagnosing failures, and use the patterns as reusable workflows rather than predictions about task frequency.
 

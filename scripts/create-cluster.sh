@@ -5,13 +5,14 @@
 # Creates a local Kubernetes cluster for CKAD practice using kind, minikube, or k3d.
 # Usage: bash scripts/create-cluster.sh [kind|minikube|k3d]
 # Default: kind
+# Override the pinned Kubernetes version with K8S_VERSION=v1.x.y.
 #
 # Source: https://github.com/techwithmohamed/CKAD-Certified-Kubernetes-Application-Developer
 
 set -euo pipefail
 
 CLUSTER_NAME="ckad-practice"
-K8S_VERSION="v1.35.0"
+K8S_VERSION="${K8S_VERSION:-v1.37.0}"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -109,10 +110,14 @@ EOF
       exit 1
     fi
 
-    k3d cluster create "${CLUSTER_NAME}" \
+    if ! k3d cluster create "${CLUSTER_NAME}" \
       --agents 2 \
-      --image "rancher/k3s:${K8S_VERSION}-k3s1" 2>/dev/null || \
-    k3d cluster create "${CLUSTER_NAME}" --agents 2
+      --image "rancher/k3s:${K8S_VERSION}-k3s1"; then
+      echo -e "${RED}Could not create the pinned K3s image for Kubernetes ${K8S_VERSION}.${NC}"
+      echo "Check that this K3s release is available, or retry with a supported version:"
+      echo "  K8S_VERSION=v1.x.y bash scripts/create-cluster.sh k3d"
+      exit 1
+    fi
     ;;
 
   *)

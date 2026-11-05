@@ -1,7 +1,7 @@
 # CKAD Mock Exam 02 — Solutions
 
-**Kubernetes Version:** v1.35  
-**Total Points:** 80%  
+**Practice Kubernetes Version:** v1.37
+**Available Practice Points:** 67
 **Difficulty:** Hard (Mix of creation, fixes, and advanced scenarios)
 
 ---
@@ -38,11 +38,11 @@ For **MOCK-EXAM-02**, most questions require:
 | Service has no endpoints | Pod labels don't match selector | Use `kubectl get pods --show-labels` to verify |
 | StatefulSet pods stuck | volumeClaimTemplate references wrong SC | `kubectl describe pod` → look for PVC error |
 | RBAC violation | Missing verbs in Role | Test with `kubectl auth can-i` before assuming it works |
-| Gateway API (v1.35) misconfig | HTTPRoute not linking to Gateway | Verify parentRef matches Gateway name/namespace |
+| Gateway API misconfiguration | HTTPRoute not linking to Gateway | Verify parentRef matches Gateway name/namespace |
 
 ---
 
-## Question 1 — Pod with Environment Variables [3%]
+## Question 1 — Pod with Environment Variables [3 pts]
 
 **Solution:**
 
@@ -52,7 +52,8 @@ kubectl run app-pod \
   --env=APP_NAME=MyApp \
   --env=ENVIRONMENT=production \
   --env=DEBUG=false \
-  -n default
+  -n default \
+  --command -- sh -c 'env; sleep 3600'
 ```
 
 Or via YAML:
@@ -66,6 +67,7 @@ spec:
   containers:
   - name: app-pod
     image: alpine:3.18
+    command: ["sh", "-c", "env; sleep 3600"]
     env:
     - name: APP_NAME
       value: MyApp
@@ -85,7 +87,7 @@ kubectl exec app-pod -- env | grep ENVIRONMENT
 
 ---
 
-## Question 2 — Pod with Shared Volume (Sidecar Pattern) [4%]
+## Question 2 — Pod with Shared Volume (Sidecar Pattern) [4 pts]
 
 **Solution:**
 
@@ -98,13 +100,14 @@ metadata:
 spec:
   containers:
   - name: app
-    image: nginx:1.25
+    image: busybox:1.36
+    command: ["sh", "-c", "while true; do date >> /data/access.log; sleep 3; done"]
     volumeMounts:
     - name: shared
       mountPath: /data
   - name: log-collector
-    image: busybox
-    command: ["tail", "-f", "/data/access.log"]
+    image: busybox:1.36
+    command: ["sh", "-c", "while [ ! -f /data/access.log ]; do sleep 1; done; tail -F /data/access.log"]
     volumeMounts:
     - name: shared
       mountPath: /data
@@ -117,12 +120,12 @@ spec:
 ```bash
 kubectl apply -f app-sidecar.yaml -n dev
 kubectl logs app-sidecar -c log-collector -n dev
-# Should show the tail output (or wait message initially)
+# Should show timestamp lines written by the app container.
 ```
 
 ---
 
-## Question 3 — Pod with Init Container and PVC [5%]
+## Question 3 — Pod with Init Container and PVC [5 pts]
 
 **Solution:**
 
@@ -135,16 +138,16 @@ metadata:
 spec:
   restartPolicy: OnFailure
   initContainers:
-  - name: downloader
-    image: alpine
-    command: ["sh", "-c", "apk add --no-cache curl && curl -o /data/input.zip https://example.com/data.zip"]
+  - name: prepare
+    image: busybox:1.36
+    command: ["sh", "-c", "echo sample-payload > /data/input.txt"]
     volumeMounts:
     - name: work
       mountPath: /data
   containers:
   - name: processor
-    image: alpine
-    command: ["sh", "-c", "sleep 3600"]
+    image: busybox:1.36
+    command: ["sh", "-c", "printf 'processed: '; cat /data/input.txt | tr -d '\\n'; echo; printf 'processed: sample-payload\\n' > /data/output.txt; sleep 3600"]
     volumeMounts:
     - name: work
       mountPath: /data
@@ -161,7 +164,7 @@ kubectl apply -f worker-job.yaml -n staging
 
 ---
 
-## Question 4 — Deployment with Probes [4%]
+## Question 4 — Deployment with Probes [4 pts]
 
 **Solution:**
 
@@ -192,7 +195,7 @@ spec:
           initialDelaySeconds: 5
         livenessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
           initialDelaySeconds: 10
 ```
@@ -205,7 +208,7 @@ kubectl rollout status deployment/frontend -n web
 
 ---
 
-## Question 5 — Deployment with Rolling Update Strategy [3%]
+## Question 5 — Deployment with Rolling Update Strategy [3 pts]
 
 **Solution:**
 
@@ -252,7 +255,7 @@ kubectl apply -f backend.yaml
 
 ---
 
-## Question 6 — ConfigMap, Secret, Pod with Mixed Mounts [5%]
+## Question 6 — ConfigMap, Secret, Pod with Mixed Mounts [5 pts]
 
 **Solution:**
 
@@ -310,7 +313,7 @@ kubectl exec config-consumer -n config -- cat /etc/config/config.txt
 
 ---
 
-## Question 7 — StatefulSet with ConfigMap and Secret [4%]
+## Question 7 — StatefulSet with ConfigMap and Secret [4 pts]
 
 **Solution:**
 
@@ -380,7 +383,7 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 5Gi
+          storage: 1Gi
 ```
 
 **Verification:**
@@ -388,12 +391,14 @@ spec:
 kubectl apply -f postgres-service.yaml
 kubectl apply -f postgres-statefulset.yaml
 kubectl get statefulset postgres -n database
-kubectl get pods postgres-* -n database
+kubectl get pods -n database -l app=postgres
+kubectl get pvc -n database
+kubectl wait --for=condition=Ready pod -l app=postgres -n database --timeout=180s
 ```
 
 ---
 
-## Question 8 — NetworkPolicy with Multiple Sources [5%]
+## Question 8 — NetworkPolicy with Multiple Sources [5 pts]
 
 **Solution:**
 
@@ -441,12 +446,17 @@ spec:
 
 **Deployment:**
 ```bash
+kubectl run backend --image=busybox:1.36 -n mesh --labels=app=backend --command -- sh -c 'httpd -f -p 8080'
+kubectl run frontend --image=busybox:1.36 -n mesh --labels=app=frontend --command -- sleep 3600
+kubectl run admin --image=busybox:1.36 -n mesh --labels=app=admin --command -- sleep 3600
+kubectl run database --image=busybox:1.36 -n mesh --labels=app=database --command -- sh -c 'nc -lk -p 5432'
 kubectl apply -f isolate-backend.yaml
+kubectl wait --for=condition=Ready pod/backend pod/frontend pod/admin pod/database -n mesh --timeout=60s
 ```
 
 ---
 
-## Question 9 — NodePort Service [4%]
+## Question 9 — NodePort Service [4 pts]
 
 **Solution:**
 
@@ -457,20 +467,16 @@ kubectl create deployment api-server \
   --replicas=2 \
   -n api
 
-# Create Service
-kubectl create service nodeport api-nodeport \
-  --tcp=8080:80 \
-  --node-port=30001 \
-  -n api
-
-# Alternative: expose then edit
+# Create from the Deployment so the selector matches its Pod labels.
 kubectl expose deployment api-server \
   --port=8080 \
   --target-port=80 \
   --type=NodePort \
   --name=api-nodeport \
   -n api \
-  --dry-run=client -o yaml | sed 's/nodePort:.*/nodePort: 30001/' | kubectl apply -f -
+  --dry-run=client -o yaml > api-nodeport.yaml
+# Set spec.ports[0].nodePort to 30001 in api-nodeport.yaml, then apply it.
+kubectl apply -f api-nodeport.yaml
 ```
 
 **Verification:**
@@ -478,11 +484,12 @@ kubectl expose deployment api-server \
 kubectl get svc api-nodeport -n api
 # output shows port 8080:30001/TCP
 kubectl describe svc api-nodeport -n api
+kubectl get endpoints api-nodeport -n api
 ```
 
 ---
 
-## Question 10 — Gateway API HTTPRoute [5%]
+## Question 10 — Gateway API HTTPRoute [5 pts]
 
 **Solution:**
 
@@ -542,7 +549,7 @@ kubectl get httproute -n routing
 
 ---
 
-## Question 11 — ClusterRole and ClusterRoleBinding [3%]
+## Question 11 — ClusterRole and ClusterRoleBinding [3 pts]
 
 **Solution:**
 
@@ -553,7 +560,7 @@ kubectl create serviceaccount app-reader -n apps
 
 # Create ClusterRole
 kubectl create clusterrole pod-lister \
-  --verb=list \
+  --verb=get,list,watch \
   --resource=pods
 
 # Create ClusterRoleBinding
@@ -564,11 +571,15 @@ kubectl create clusterrolebinding app-reader-pods \
 # Verify
 kubectl auth can-i list pods --as=system:serviceaccount:apps:app-reader
 # Output: yes
+kubectl auth can-i watch pods --as=system:serviceaccount:apps:app-reader
+# Output: yes
+kubectl auth can-i delete pods --as=system:serviceaccount:apps:app-reader
+# Output: no
 ```
 
 ---
 
-## Question 12 — Complex RBAC for Developer [4%]
+## Question 12 — Complex RBAC for Developer [4 pts]
 
 **Solution:**
 
@@ -601,7 +612,7 @@ kubectl create rolebinding dev-config-role \
 
 # ClusterRole: read-only pod access everywhere
 kubectl create clusterrole pod-reader \
-  --verb=get,list \
+  --verb=get,list,watch \
   --resource=pods
 
 # ClusterRoleBinding
@@ -622,11 +633,13 @@ kubectl auth can-i list pods -n default --as=system:serviceaccount:dev:developer
 # Output: yes
 kubectl auth can-i create pods -n default --as=system:serviceaccount:dev:developer
 # Output: no
+kubectl auth can-i watch pods -n default --as=system:serviceaccount:dev:developer
+# Output: yes
 ```
 
 ---
 
-## Question 13 — Restrictive SecurityContext with tmpfs [5%]
+## Question 13 — Restrictive SecurityContext with tmpfs [5 pts]
 
 **Solution:**
 
@@ -644,7 +657,9 @@ spec:
     fsGroup: 2001
   containers:
   - name: nginx
-    image: nginx:1.25
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    ports:
+    - containerPort: 8080
     securityContext:
       capabilities:
         drop:
@@ -660,7 +675,8 @@ spec:
       mountPath: /var/run
   volumes:
   - name: tmp
-    emptyDir: {}
+    emptyDir:
+      medium: Memory
   - name: var-cache
     emptyDir: {}
   - name: var-run
@@ -673,11 +689,13 @@ spec:
 ```bash
 kubectl apply -f restricted.yaml -n secure
 kubectl get pod restricted -n secure -o yaml | grep -A 15 "securityContext"
+kubectl wait --for=condition=Ready pod/restricted -n secure --timeout=90s
+kubectl exec restricted -n secure -- wget -qO- http://127.0.0.1:8080/
 ```
 
 ---
 
-## Question 14 — Pod with Continuous Logging [4%]
+## Question 14 — Pod with Continuous Logging [4 pts]
 
 **Solution:**
 
@@ -710,6 +728,8 @@ spec:
 ```bash
 kubectl logs log-generator -n monitoring --tail=5
 # Shows last 5 lines
+kubectl logs log-generator -n monitoring --since=10s --tail=5 --timestamps=true
+# At most five timestamped lines from the last ten seconds.
 kubectl logs log-generator -n monitoring --timestamps=true
 # Shows with timestamps
 kubectl logs log-generator -n monitoring -f
@@ -718,7 +738,7 @@ kubectl logs log-generator -n monitoring -f
 
 ---
 
-## Question 15 — CronJob [4%]
+## Question 15 — CronJob [4 pts]
 
 **Solution:**
 
@@ -730,7 +750,7 @@ kubectl create cronjob backup-job \
   --image=busybox \
   --schedule="0 2 * * *" \
   -n jobs \
-  -- sh -c 'echo "Backup started at $(date)" && sleep 10 && echo "Backup complete'
+  -- sh -c 'echo "Backup started at $(date)" && sleep 10 && echo "Backup complete"'
 ```
 
 Or YAML (recommended for fine-tuning):
@@ -767,7 +787,7 @@ kubectl get jobs -n jobs
 
 ---
 
-## Question 16 — DaemonSet with Tolerations [5%]
+## Question 16 — DaemonSet with Tolerations [5 pts]
 
 **Solution:**
 

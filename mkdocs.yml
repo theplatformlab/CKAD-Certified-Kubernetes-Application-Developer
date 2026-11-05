@@ -1,5 +1,5 @@
-site_name: CKAD Certification Guide 2026
-site_description: "How I passed the CKAD with 91% — study notes, practice exercises, kubectl cheat sheet, and mock exam for Kubernetes v1.35"
+site_name: CKAD Study Guide for 2027
+site_description: "Practical CKAD study paths, exercises, troubleshooting patterns, and timed practice"
 site_url: https://techwithmohamed.github.io/CKAD-Certified-Kubernetes-Application-Developer/
 repo_url: https://github.com/techwithmohamed/CKAD-Certified-Kubernetes-Application-Developer
 repo_name: techwithmohamed/CKAD-Certified-Kubernetes-Application-Developer
@@ -59,6 +59,7 @@ markdown_extensions:
 nav:
   - Home: README.md
   - Exercises:
+    - Overview: exercises/README.md
     - "01 — Pod Basics": exercises/01-pod-basics/README.md
     - "02 — Multi-Container Pod": exercises/02-multi-container-pod/README.md
     - "03 — ConfigMap + Secret": exercises/03-configmap-secret/README.md
@@ -73,14 +74,19 @@ nav:
     - "12 — DaemonSet": exercises/12-daemonset/README.md
     - "13 — Init Containers": exercises/13-init-containers/README.md
     - "14 — In-Place Scaling": exercises/14-in-place-scaling/README.md
-  - Changelog: CHANGELOG.md
+  - Mock Exams:
+    - Overview: mock-exams/README.md
+    - Exam 01: mock-exams/MOCK-EXAM-01.md
+    - Exam 01 Solutions: mock-exams/MOCK-EXAM-01-SOLUTIONS.md
+    - Exam 02: mock-exams/MOCK-EXAM-02.md
+    - Exam 02 Solutions: mock-exams/MOCK-EXAM-02-SOLUTIONS.md
+    - Full Practice Exam: mock-exams/FULL-MOCK-EXAM.md
+    - 2027 Challenge Set: mock-exams/CKAD-CHALLENGE-SET-2027.md
+    - 2027 Challenge Solutions: mock-exams/CKAD-CHALLENGE-SET-2027-SOLUTIONS.md
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/techwithmohamed
-  analytics:
-    provider: google
-    property: G-XXXXXXXXXX
 
 docs_dir: "."

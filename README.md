@@ -1,81 +1,91 @@
-# CKAD Exam Prep — Kubernetes v1.35
+# CKAD Practice
 
-Study materials and practice exercises for the Certified Kubernetes Application Developer (CKAD) exam.
+Original CKAD practice labs and mock exams. All tasks in this repository are independently written; they are not actual certification questions.
+
+**Contents:** [Quick Start](#quick-start) · [Repository Layout](#repository-layout) · [Practice by Domain](#practice-by-domain) · [Local Cluster](#local-cluster) · [Mock Exams](#mock-exams) · [Exam Information](#exam-information)
 
 ## Quick Start
 
-1. Go to [START-HERE.md](START-HERE.md) — choose your timeline (1 week, 2 weeks, 3-4 weeks, or cramming)
-2. Follow the study path for your timeline
-3. Work through the exercises and patterns
-4. Take the mock exam under timed conditions
-5. Review weak areas
+For a disposable local cluster, you need Bash, `kubectl`, Docker, and kind. On Windows, run the Bash commands from WSL2 or Git Bash with Docker available.
 
-## What's In This Repo
+```bash
+# Create the default v1.37 kind practice cluster
+bash scripts/create-cluster.sh kind
 
-| Directory | What You Find |
-|-----------|---|
-| [**patterns/**](patterns/) | 6 most-tested CKAD patterns with examples and verification |
-| [**exercises/**](exercises/) | 14 hands-on exercises, speed drills, complex scenarios |
-| [**mock-exams/**](mock-exams/) | Full-length practice exams (15 questions each, 2 hours) |
-| [**troubleshooting/**](troubleshooting/) | RBAC, networking, debugging, common mistakes, container basics |
-| [**scripts/**](scripts/) | Setup scripts for exam environment config |
-| [**skeletons/**](skeletons/) | YAML templates for reference |
+# Confirm the cluster before applying resources
+kubectl config current-context
+kubectl get nodes
 
-## Files to Bookmark
+# Optional aliases for this terminal session
+source scripts/exam-setup.sh
 
-- [START-HERE.md](START-HERE.md) — Entry point with study paths
-- [INDEX.md](INDEX.md) — Complete navigation and quick reference
-- [STUDY-PATHS.md](STUDY-PATHS.md) — Detailed daily schedules for each timeline
-- [EXAM-FEEDBACK-2026.md](EXAM-FEEDBACK-2026.md) — Real 2026 exam feedback and what actually appeared
-- [KUBECTL-CHEATSHEET.md](KUBECTL-CHEATSHEET.md) — Commands ranked by frequency
-- [exam-strategy.md](exam-strategy.md) — Time management and exam day tips
-- [troubleshooting/basics/COMMON-MISTAKES.md](troubleshooting/basics/COMMON-MISTAKES.md) — 20 common errors to avoid
+# Start the first lab
+cd exercises/01-pod-basics
+```
 
-## Exam Details
+The cluster script changes the active Kubernetes context. Use a disposable cluster, never a production or shared context. To remove the default kind cluster when finished:
 
-- **Duration:** 2 hours
-- **Questions:** 15-20 hands-on tasks
-- **Passing Score:** 66%
-- **Kubernetes Version:** v1.35
-- **Format:** Terminal-based, no multiple choice
+```bash
+kind delete cluster --name ckad-practice
+```
 
-## Study Timeline Options
+Start with [Exercise 01](exercises/01-pod-basics/README.md). Attempt the task, run its verification steps, then open the solution. If the task is already easy, use the domain map below to choose a weaker topic.
 
-| Timeline | Study Hours | Best For |
-|----------|-------------|----------|
-| 1 week | 30-40 hours | Crash course, refresher |
-| 2 weeks | 50-70 hours | Standard prep |
-| 3-4 weeks | 80-120 hours | Thorough learning |
-| 2+ months | 150+ hours | Deep mastery |
+## Repository Layout
 
-See [STUDY-PATHS.md](STUDY-PATHS.md) for daily breakdowns.
+```text
+exercises/       14 labs, timed drills, and multi-step scenarios
+mock-exams/      Written mocks, solutions, and challenge set
+skeletons/       YAML starting points
+patterns/        Short troubleshooting workflows
+troubleshooting/ Broken manifests and debugging references
+scripts/         Cluster setup, quiz, and mock-exam helpers
+```
 
-## How to Use This Repo
+Questions are kept in the [exercise](exercises/README.md) and [mock exam](mock-exams/README.md) sections. The patterns and troubleshooting files are optional references for when you get stuck.
 
-1. Pick a study timeline based on your available time
-2. Work through exercises in order — they're designed to build progressively
-3. Study the patterns — they appear repeatedly on the real exam
-4. Take the mock exam under exam conditions (2 hours, no breaks, closed book except kubernetes.io)
-5. Review your weak areas using the INDEX navigation links
-6. Repeat until you score 80%+ on the mock exam
+## Practice by Domain
 
-## Content Overview
+The weights below are from the [current CNCF CKAD curriculum](https://github.com/cncf/curriculum/tree/main/ckad). Use them to allocate study time, not to predict which tasks will appear.
 
-**Practical, not theoretical.** Every file includes:
-- Copy-paste ready kubectl commands
-- Actual YAML examples you'll see on the exam
-- Step-by-step verification (how to confirm your answer works)
-- Common gotchas and how to avoid them
+| Curriculum domain | Weight | Exercises |
+|---|---:|---|
+| Application Environment, Configuration and Security | 25% | [03](exercises/03-configmap-secret/README.md), [04](exercises/04-rbac/README.md), [10](exercises/10-security-pvc/README.md) |
+| Application Design and Build | 20% | [01](exercises/01-pod-basics/README.md), [02](exercises/02-multi-container-pod/README.md), [11](exercises/11-statefulset/README.md), [12](exercises/12-daemonset/README.md), [13](exercises/13-init-containers/README.md), [14](exercises/14-in-place-scaling/README.md) |
+| Application Deployment | 20% | [06](exercises/06-rolling-update/README.md), [07](exercises/07-helm/README.md) |
+| Services and Networking | 20% | [05](exercises/05-networkpolicy/README.md), [09](exercises/09-ingress-gateway/README.md) |
+| Application Observability and Maintenance | 15% | [08](exercises/08-probes/README.md) |
 
-## Resources Included
+For the full lab list, difficulty labels, and environment notes, open the [exercise catalog](exercises/README.md).
 
-- 100+ kubectl commands (ranked by exam frequency)
-- 14 complete exercises with solutions
-- 1 full mock exam (15 questions with detailed answers)
-- 6 core pattern guides with debugging workflows
-- YAML templates for all resource types
-- Exam strategy and time management guide
+## Local Cluster
 
-## Next Steps
+The setup script supports kind, Minikube, and k3d. kind is the default. The script pins Kubernetes v1.37 for repeatable practice; override it with `K8S_VERSION=v1.x.y` before running the script if needed.
 
-[Go to START-HERE.md →](START-HERE.md)
+```bash
+bash scripts/create-cluster.sh kind
+# or
+bash scripts/create-cluster.sh minikube
+bash scripts/create-cluster.sh k3d
+```
+
+Some labs need extra cluster support: NetworkPolicy enforcement requires a capable CNI; Ingress and Gateway API tasks require the relevant controller/resources; storage tasks may need a StorageClass. Read the exercise notes before starting. The default local cluster will not provide every optional feature.
+
+For a v1.37 API server, use a `kubectl` client within one minor version, per the [Kubernetes version-skew policy](https://kubernetes.io/releases/version-skew-policy/).
+
+## Mock Exams
+
+The written mocks are designed for timed practice. Their task counts, points, and scores are this repository's rubric only; they are not an official blueprint or pass prediction.
+
+| Set | Tasks | Suggested time | Solutions |
+|---|---:|---:|---|
+| [Mock Exam 01](mock-exams/MOCK-EXAM-01.md) | 15 | 2 hours | [Answers](mock-exams/MOCK-EXAM-01-SOLUTIONS.md) |
+| [Mock Exam 02](mock-exams/MOCK-EXAM-02.md) | 16 | 2 hours | [Answers](mock-exams/MOCK-EXAM-02-SOLUTIONS.md) |
+| [Full Mock Exam](mock-exams/FULL-MOCK-EXAM.md) | 15 | 2 hours | Inline |
+| [Challenge Set 2027](mock-exams/CKAD-CHALLENGE-SET-2027.md) | 5 | 75 minutes | [Answers](mock-exams/CKAD-CHALLENGE-SET-2027-SOLUTIONS.md) |
+
+**Review method:** Mark the exact requirement you missed, find the command or output that exposes the issue, then retry that part later without the solution.
+
+## Exam Information
+
+The Linux Foundation FAQ checked on November 5, 2026 lists a two-hour exam, a 66% passing score, and Kubernetes v1.37. The exam environment tracks recent Kubernetes releases, so these details may change before a 2027 appointment. Check the [official CKAD FAQ](https://docs.linuxfoundation.org/tc-docs/certification/faq-cka-ckad-cks), [current CNCF curriculum](https://github.com/cncf/curriculum/tree/main/ckad), and [allowed resources](https://docs.linuxfoundation.org/tc-docs/certification/certification-resources-allowed#certified-kubernetes-administrator-cka-and-certified-kubernetes-application-developer-ckad) close to your exam date.

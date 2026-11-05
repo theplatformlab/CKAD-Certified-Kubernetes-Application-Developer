@@ -1,7 +1,7 @@
 # CKAD Mock Exam 01 — Solutions
 
-**Kubernetes Version:** v1.35  
-**Total Points:** 73%
+**Practice Kubernetes Version:** v1.37
+**Available Practice Points:** 63
 
 ---
 
@@ -36,7 +36,7 @@ When tasks fail, use this sequence:
 
 ---
 
-## Question 1 — Pod with Resources and Labels [3%]
+## Question 1 — Pod with Resources and Labels [3 pts]
 
 ### ✅ Fast Approach (Imperative — 30 seconds)
 
@@ -118,7 +118,7 @@ kubectl describe pod web-pod
 
 ---
 
-## Question 2 — Multi-Container Pod [4%]
+## Question 2 — Multi-Container Pod [4 pts]
 
 **Solution:**
 
@@ -131,37 +131,53 @@ metadata:
 spec:
   initContainers:
   - name: init-db
-    image: busybox
-    command: ["sh", "-c", "sleep 2"]
+    image: busybox:1.36
+    command: ["sh", "-c", "echo ready > /shared/status"]
     resources:
       requests:
         cpu: 50m
         memory: 64Mi
+    volumeMounts:
+    - name: shared
+      mountPath: /shared
   containers:
   - name: app
-    image: nginx:1.25
+    image: busybox:1.36
+    command: ["sh", "-c", "while true; do date >> /shared/app.log; sleep 5; done"]
     resources:
       requests:
         cpu: 50m
         memory: 64Mi
-  - name: redis
-    image: redis:7
+    volumeMounts:
+    - name: shared
+      mountPath: /shared
+  - name: log-agent
+    image: busybox:1.36
+    command: ["sh", "-c", "while [ ! -f /shared/app.log ]; do sleep 1; done; tail -F /shared/app.log"]
     resources:
       requests:
         cpu: 50m
         memory: 64Mi
+    volumeMounts:
+    - name: shared
+      mountPath: /shared
+  volumes:
+  - name: shared
+    emptyDir: {}
 ```
 
 **Deployment:**
 ```bash
 kubectl apply -f app-stack.yaml
 kubectl get pod app-stack -n backend
-# Status should be Running after init container completes
+kubectl wait --for=condition=Ready pod/app-stack -n backend --timeout=60s
+kubectl logs app-stack -n backend -c log-agent --tail=3
+# The sidecar should show timestamp lines written by the app container.
 ```
 
 ---
 
-## Question 3 — Pod with Init Container and SecurityContext [5%]
+## Question 3 — Pod with Init Container and SecurityContext [5 pts]
 
 **Solution:**
 
@@ -176,16 +192,16 @@ spec:
     runAsUser: 1000
     fsGroup: 2000
   initContainers:
-  - name: download
-    image: busybox
-    command: ["sh", "-c", "echo '#!/bin/sh' > /data/startup.sh && echo 'echo \"App started\"' >> /data/startup.sh && chmod +x /data/startup.sh"]
+  - name: prepare
+    image: busybox:1.36
+    command: ["sh", "-c", "printf '#!/bin/sh\\necho App-started\\n' > /data/startup.sh && chmod +x /data/startup.sh"]
     volumeMounts:
     - name: data
       mountPath: /data
   containers:
   - name: runner
     image: alpine
-    command: ["sh", "-c", "sleep 3600"]
+    command: ["sh", "-c", "/data/startup.sh && sleep 3600"]
     volumeMounts:
     - name: data
       mountPath: /data
@@ -204,7 +220,7 @@ kubectl exec init-pod -n dev -- ls -la /data/
 
 ---
 
-## Question 4 — Deployment with Rolling Update Strategy [4%]
+## Question 4 — Deployment with Rolling Update Strategy [4 pts]
 
 **Solution:**
 
@@ -233,11 +249,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: web-app
+      app: web
   template:
     metadata:
       labels:
-        app: web-app
+        app: web
         version: v1
     spec:
       containers:
@@ -253,7 +269,7 @@ kubectl rollout status deployment/web-app -n production
 
 ---
 
-## Question 5 — Deployment Rolling Update and Rollback [3%]
+## Question 5 — Deployment Rolling Update and Rollback [3 pts]
 
 **Solution:**
 
@@ -262,7 +278,7 @@ kubectl rollout status deployment/web-app -n production
 kubectl create deployment api --image=nginx:1.24 --replicas=2 -n apps
 
 # Update image
-kubectl set image deployment/api nginx=nginx:1.25 -n apps --record
+kubectl set image deployment/api nginx=nginx:1.25 -n apps
 
 # Wait for rollout
 kubectl rollout status deployment/api -n apps
@@ -282,7 +298,7 @@ kubectl get deployment api -n apps -o yaml | grep "image:"
 
 ---
 
-## Question 6 — ConfigMap and Pod with Environment Variables [5%]
+## Question 6 — ConfigMap and Pod with Environment Variables [5 pts]
 
 **Solution:**
 
@@ -328,7 +344,7 @@ kubectl exec config-pod -n config-test -- env | grep DATABASE
 
 ---
 
-## Question 7 — Secret and Pod with Volume Mount [4%]
+## Question 7 — Secret and Pod with Volume Mount [4 pts]
 
 **Solution:**
 
@@ -376,7 +392,7 @@ kubectl exec secret-pod -n secrets-ns -- cat /etc/secrets/username
 
 ---
 
-## Question 8 — NetworkPolicy [5%]
+## Question 8 — NetworkPolicy [5 pts]
 
 **Solution:**
 
@@ -428,7 +444,7 @@ kubectl describe networkpolicy restrict-traffic -n network-test
 
 ---
 
-## Question 9 — Service Exposure [4%]
+## Question 9 — Service Exposure [4 pts]
 
 **Solution:**
 
@@ -455,7 +471,7 @@ kubectl get endpoints web-service -n web
 
 ---
 
-## Question 10 — Ingress [5%]
+## Question 10 — Ingress [5 pts]
 
 **Solution:**
 
@@ -509,7 +525,7 @@ kubectl describe ingress app-ingress -n ingress-test
 
 ---
 
-## Question 11 — RBAC (Role + RoleBinding) [3%]
+## Question 11 — RBAC (Role + RoleBinding) [3 pts]
 
 **Solution:**
 
@@ -543,7 +559,7 @@ kubectl auth can-i delete pods -n dev --as=system:serviceaccount:dev:developer
 
 ---
 
-## Question 12 — ClusterRole + ClusterRoleBinding [4%]
+## Question 12 — ClusterRole + ClusterRoleBinding [4 pts]
 
 **Solution:**
 
@@ -552,6 +568,8 @@ kubectl auth can-i delete pods -n dev --as=system:serviceaccount:dev:developer
 kubectl create clusterrole deployment-manager \
   --verb=get,list,create,update,patch \
   --resource=deployments
+
+kubectl create serviceaccount admin -n default --dry-run=client -o yaml | kubectl apply -f -
 
 # Create ClusterRoleBinding
 kubectl create clusterrolebinding deploy-admin \
@@ -563,11 +581,15 @@ kubectl get clusterrole deployment-manager
 kubectl get clusterrolebinding deploy-admin
 kubectl auth can-i update deployments --as=system:serviceaccount:default:admin
 # Output: yes
+kubectl auth can-i patch deployments --as=system:serviceaccount:default:admin
+# Output: yes
+kubectl auth can-i delete deployments --as=system:serviceaccount:default:admin
+# Output: no
 ```
 
 ---
 
-## Question 13 — Pod with SecurityContext [5%]
+## Question 13 — Pod with SecurityContext [5 pts]
 
 **Solution:**
 
@@ -595,6 +617,7 @@ spec:
   - name: app
     image: alpine
     command: ["sleep", "3600"]
+    command: ["sleep", "3600"]
     securityContext:
       capabilities:
         drop:
@@ -617,7 +640,7 @@ kubectl get pod secure-app -n secure -o yaml | grep -A 10 "securityContext"
 
 ---
 
-## Question 14 — Pod with Liveness and Readiness Probes [4%]
+## Question 14 — Pod with Liveness and Readiness Probes [4 pts]
 
 **Solution:**
 
@@ -639,13 +662,13 @@ spec:
     image: nginx:1.25
     livenessProbe:
       httpGet:
-        path: /health
+        path: /
         port: 80
       initialDelaySeconds: 10
       periodSeconds: 5
     readinessProbe:
       httpGet:
-        path: /ready
+        path: /
         port: 80
       initialDelaySeconds: 5
       periodSeconds: 3
@@ -662,7 +685,7 @@ kubectl describe pod health-check -n monitoring | grep -A 3 "Liveness\|Readiness
 
 ---
 
-## Question 15 — StatefulSet with PVC and ConfigMap [5%]
+## Question 15 — StatefulSet with PVC and ConfigMap [5 pts]
 
 **Solution:**
 
@@ -673,6 +696,10 @@ kubectl create namespace advanced
 kubectl create configmap db-config \
   --from-literal=POSTGRES_DB=mydb \
   --from-literal=POSTGRES_USER=admin \
+  -n advanced
+
+kubectl create secret generic db-secret \
+  --from-literal=POSTGRES_PASSWORD='change-me-for-practice' \
   -n advanced
 ```
 
@@ -701,6 +728,12 @@ spec:
         envFrom:
         - configMapRef:
             name: db-config
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
         volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
@@ -715,7 +748,7 @@ spec:
           storage: 1Gi
 ```
 
-Also create a Headless Service:
+Create and apply this headless Service before applying the StatefulSet:
 
 ```yaml
 apiVersion: v1
@@ -739,29 +772,31 @@ kubectl apply -f statefulset.yaml
 kubectl get statefulset db-app -n advanced
 kubectl get pvc -n advanced
 # Should show data-db-app-0, data-db-app-1, data-db-app-2
+kubectl wait --for=condition=Ready pod -l app=database -n advanced --timeout=180s
 ```
 
 ---
 
 ## Scoring Summary
 
-| Question | Domain | Weight | Difficulty | Time Est. |
+| Question | Domain | Practice points | Difficulty | Time Est. |
 |----------|--------|--------|-----------|-----------|
-| 1 | Design & Build | 3% | Easy | 2-3 min |
-| 2 | Design & Build | 4% | Medium | 4-5 min |
-| 3 | Design & Build | 5% | Hard | 6-8 min |
-| 4 | Deployment | 4% | Medium | 4-5 min |
-| 5 | Deployment | 3% | Easy | 2-3 min |
-| 6 | Configuration | 5% | Medium | 5-6 min |
-| 7 | Configuration | 4% | Medium | 4-5 min |
-| 8 | Networking | 5% | Hard | 6-8 min |
-| 9 | Networking | 4% | Medium | 4-5 min |
-| 10 | Networking | 5% | Hard | 6-8 min |
-| 11 | RBAC | 3% | Easy | 2-3 min |
-| 12 | RBAC | 4% | Medium | 4-5 min |
-| 13 | Security | 5% | Hard | 6-8 min |
-| 14 | Observability | 4% | Medium | 4-5 min |
-| 15 | Design & Build | 5% | Hard | 6-8 min |
+| 1 | Design & Build | 3 | Easy | 2-3 min |
+| 2 | Design & Build | 4 | Medium | 4-5 min |
+| 3 | Design & Build | 5 | Hard | 6-8 min |
+| 4 | Deployment | 4 | Medium | 4-5 min |
+| 5 | Deployment | 3 | Easy | 2-3 min |
+| 6 | Configuration | 5 | Medium | 5-6 min |
+| 7 | Configuration | 4 | Medium | 4-5 min |
+| 8 | Networking | 5 | Hard | 6-8 min |
+| 9 | Networking | 4 | Medium | 4-5 min |
+| 10 | Networking | 5 | Hard | 6-8 min |
+| 11 | RBAC | 3 | Easy | 2-3 min |
+| 12 | RBAC | 4 | Medium | 4-5 min |
+| 13 | Security | 5 | Hard | 6-8 min |
+| 14 | Observability | 4 | Medium | 4-5 min |
+| 15 | Design & Build | 5 | Hard | 6-8 min |
+| | **Total** | **63** | | |
 
 ---
 
@@ -782,20 +817,13 @@ kubectl describe pod image-test -n broken-apps
 **Approach 1: Patch (Fastest — 30 seconds)**
 
 ```bash
+original_uid=$(kubectl get pod image-test -n broken-apps -o jsonpath='{.metadata.uid}')
 kubectl patch pod image-test -n broken-apps -p \
   '{"spec":{"containers":[{"name":"app","image":"nginx:1.25"}]}}'
 
-kubectl get pod image-test -n broken-apps
-# Status should change: ImagePullBackOff → Running
-```
-
-**Approach 2: Export, Edit, Recreate** (safer for complex changes)
-
-```bash
-kubectl get pod image-test -n broken-apps -o yaml > image-test.yaml
-# Edit: image: private-registry/app:v2.0 → image: nginx:1.25
-kubectl delete pod image-test -n broken-apps
-kubectl apply -f image-test.yaml
+kubectl wait --for=condition=Ready pod/image-test -n broken-apps --timeout=120s
+current_uid=$(kubectl get pod image-test -n broken-apps -o jsonpath='{.metadata.uid}')
+test "$original_uid" = "$current_uid"
 ```
 
 ### Verification
@@ -857,9 +885,10 @@ env:
 ### Verification
 
 ```bash
-kubectl rollout restart deployment/data-processor -n app-errors
+kubectl rollout status deployment/data-processor -n app-errors
+kubectl get pods -n app-errors -l app=data-processor
 kubectl logs deployment/data-processor -n app-errors
-# Check: No "key not found" errors
+# Confirm the replacement Pod starts without the missing-key error.
 ```
 
 ---

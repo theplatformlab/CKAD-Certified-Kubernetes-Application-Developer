@@ -28,7 +28,7 @@ spec:
     - name: logs
       emptyDir: {}
 ---
-# Bonus — Native Sidecar (v1.35)
+# Bonus — Native Sidecar (stable since Kubernetes v1.33)
 apiVersion: v1
 kind: Pod
 metadata:

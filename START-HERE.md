@@ -1,59 +1,17 @@
-# CKAD Study Guide
+# Start Here
 
-Choose your study timeline based on available time.
+## Short on Time
 
-## Study Options
+1. Try [Exercise 01](exercises/01-pod-basics/README.md) without looking at the solution.
+2. Use the [domain map](exercises/README.md) to choose the topics you cannot complete or verify.
+3. Retry those exercises from a clean namespace.
+4. Take [Mock Exam 01](mock-exams/MOCK-EXAM-01.md), review every miss, then take [Mock Exam 02](mock-exams/MOCK-EXAM-02.md).
 
-### 1 Week Crash Course
-- **For:** Already know Kubernetes basics, time is tight
-- **Study hours:** 30-40 (4-6 hours/day)
-- **Go to:** [STUDY-PATHS.md#1-week-crash-course](STUDY-PATHS.md#1-week-crash-course)
+Already confident with core resources? Start with the [2027 Challenge Set](mock-exams/CKAD-CHALLENGE-SET-2027.md).
 
-### 2 Weeks
-- **For:** Standard prep with solid foundation
-- **Study hours:** 50-60 (4-5 hours/day)
-- **Go to:** [STUDY-PATHS.md#2-weeks](STUDY-PATHS.md#2-weeks)
+## Sections
 
-### 3-4 Weeks
-- **For:** Thorough prep, want high confidence
-- **Study hours:** 80-100 (comfortable pace)
-- **Go to:** [STUDY-PATHS.md#3-4-weeks](STUDY-PATHS.md#3-4-week-comprehensive)
+- [Exercises](exercises/README.md): topic labs, timed drills, multi-step tasks.
+- [Mock Exams](mock-exams/README.md): timed question sets and solutions.
 
-### Test Your Level First
-- **For:** Already studied, need practice reps
-- **Time needed:** 2 hours
-- **Go to:** [mock-exams/MOCK-EXAM-01.md](mock-exams/MOCK-EXAM-01.md)
-- **Scoring:** 70% = ready for exam, below 70% = pick a study path above
-
-## Troubleshooting (stuck on something)
-
-| Problem | See |
-|---------|-----|
-| Pod won't start | [patterns/deployment-fix.md](patterns/deployment-fix.md) |
-| Service has no endpoints | [patterns/service-selector-mismatch.md](patterns/service-selector-mismatch.md) |
-| RBAC permission denied | [patterns/rbac-debug.md](patterns/rbac-debug.md) |
-| Ingress not working | [patterns/ingress-debug.md](patterns/ingress-debug.md) |
-| Network blocked | [troubleshooting/networking/networking-debug.md](troubleshooting/networking/networking-debug.md) |
-| CronJob not running | [patterns/cronjob-create.md](patterns/cronjob-create.md) |
-
-## Quick References
-
-- kubectl commands: [KUBECTL-CHEATSHEET.md](KUBECTL-CHEATSHEET.md)
-- Common mistakes: [troubleshooting/basics/COMMON-MISTAKES.md](troubleshooting/basics/COMMON-MISTAKES.md)
-- Full index: [INDEX.md](INDEX.md)
-- Exam strategy: [exam-strategy.md](exam-strategy.md)
-
-## Core Patterns (80% of exam)
-
-1. RBAC — 20%
-2. Deployment debugging — 15%
-3. Service/networking — 15%
-4. NetworkPolicy — 15%
-5. CronJob/Job — 10%
-6. Ingress — 10%
-
-Master these 6 and you're ready.
-
-## Next Step
-
-Pick your timeline above and go. Start with daily schedule in STUDY-PATHS.md.
+Use a disposable cluster. Check `kubectl config current-context` before applying resources. The repository's default local cluster is v1.37 for repeatable practice; check the current [CKAD FAQ](https://docs.linuxfoundation.org/tc-docs/certification/faq-cka-ckad-cks) before your exam.

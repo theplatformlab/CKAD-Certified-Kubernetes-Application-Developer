@@ -8,7 +8,7 @@
 
 ## Core Study Materials
 
-### Patterns (6 most-tested topics)
+### Patterns (six practical workflows)
 - [patterns/rbac-debug.md](patterns/rbac-debug.md) — RBAC setup and debugging
 - [patterns/deployment-fix.md](patterns/deployment-fix.md) — Fix broken deployments
 - [patterns/service-selector-mismatch.md](patterns/service-selector-mismatch.md) — Service and endpoint issues
@@ -17,7 +17,7 @@
 - [patterns/ingress-debug.md](patterns/ingress-debug.md) — Ingress routing issues
 
 ### Hands-on Practice
-- [exercises/](exercises/) — 14 exercises, speed drills, complex workflows
+- [Exercise Catalog](exercises/README.md) — 14 labs mapped to the CKAD domains
 - [exercises/timed-exercises.md](exercises/timed-exercises.md) — Speed drills (2-5-10 min)
 - [exercises/multi-step-scenarios.md](exercises/multi-step-scenarios.md) — Complex workflows
 - [troubleshooting/broken/](troubleshooting/broken/) — YAML files with intentional errors
@@ -29,16 +29,23 @@
 
 ## Reference Materials
 
-- [KUBECTL-CHEATSHEET.md](KUBECTL-CHEATSHEET.md) — Commands ranked by frequency
-- [EXAM-FEEDBACK-2026.md](EXAM-FEEDBACK-2026.md) — What actually appeared on 2026 exams (NDA-compliant feedback)
+- [KUBECTL-CHEATSHEET.md](KUBECTL-CHEATSHEET.md) — Common kubectl commands and examples
+- [EXAM-FEEDBACK-2026.md](EXAM-FEEDBACK-2026.md) — Anecdotal 2026 study notes; not an exam blueprint
 - [exam-strategy.md](exam-strategy.md) — Time management, exam day tips
 - [skeletons/](skeletons/) — YAML templates for all resource types
 - [scripts/](scripts/) — Setup scripts for exam environment
 
 ## Mock Exams
 
+- [Mock Exam Guide](mock-exams/README.md) — Choose an exam and review scoring guidance
 - [mock-exams/MOCK-EXAM-01.md](mock-exams/MOCK-EXAM-01.md) — Practice exam 1 (15 questions)
-- [mock-exams/MOCK-EXAM-02.md](mock-exams/MOCK-EXAM-02.md) — Practice exam 2 (15 questions)
+- [mock-exams/MOCK-EXAM-01-SOLUTIONS.md](mock-exams/MOCK-EXAM-01-SOLUTIONS.md) — Exam 1 solutions
+- [mock-exams/MOCK-EXAM-02.md](mock-exams/MOCK-EXAM-02.md) — Practice exam 2 (16 questions)
+- [mock-exams/MOCK-EXAM-02-SOLUTIONS.md](mock-exams/MOCK-EXAM-02-SOLUTIONS.md) — Exam 2 solutions
+- [mock-exams/FULL-MOCK-EXAM.md](mock-exams/FULL-MOCK-EXAM.md) — Additional 15-question practice test
+- [mock-exams/CKAD-CHALLENGE-SET-2027.md](mock-exams/CKAD-CHALLENGE-SET-2027.md) — Five original integrated challenge tasks
+- [mock-exams/CKAD-CHALLENGE-SET-2027-SOLUTIONS.md](mock-exams/CKAD-CHALLENGE-SET-2027-SOLUTIONS.md) — Worked challenge solutions
+- [scripts/mock-exam.sh](scripts/mock-exam.sh) — Interactive 17-question timed practice
 
 ## Troubleshooting Guide
 
@@ -88,6 +95,6 @@ skeletons/          YAML templates
 
 - KUBECTL-CHEATSHEET.md
 - exam-strategy.md
-- basics/COMMON-MISTAKES.md
+- troubleshooting/basics/COMMON-MISTAKES.md
 - patterns/rbac-debug.md
 - patterns/deployment-fix.md

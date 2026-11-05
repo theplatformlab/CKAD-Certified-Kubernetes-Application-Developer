@@ -7,7 +7,7 @@ Actionable checklist to maximize reach, stars, and traffic.
 - [ ] Add Exercise 11: StatefulSet (stable identity, headless Service, persistent storage)
 - [ ] Add Exercise 12: DaemonSet (node-level logging agent, tolerations)
 - [ ] Add Exercise 13: Init Containers (dependency checks, migration runners)
-- [ ] Add Exercise 14: In-Place Pod Vertical Scaling (new in v1.35 GA)
+- [ ] Add Exercise 14: In-Place Pod Vertical Scaling (stable since v1.35; current practice target v1.37)
 - [ ] Add difficulty badges to every exercise README (`Easy` / `Medium` / `Hard`)
 - [ ] Add `verify.sh` scripts to exercises (automated answer checking)
 - [ ] Create Anki deck export (.apkg) of key kubectl commands + YAML patterns
@@ -21,7 +21,7 @@ Actionable checklist to maximize reach, stars, and traffic.
 
 ## Phase 3: SEO & Discoverability (Week 2)
 
-- [ ] Set GitHub repo **description**: `CKAD Exam 2026 — Practice Questions, Mock Exam, Exercises & Study Guide | Kubernetes v1.35 | Scored 91%`
+- [ ] Set GitHub repo **description**: `CKAD Exam 2026 — Practice Questions, Mock Exam, Exercises & Study Guide | Kubernetes v1.37 | Scored 91%`
 - [ ] Set GitHub **topics**: `ckad`, `kubernetes`, `ckad-exam`, `ckad-exercises`, `kubernetes-certification`, `ckad-2026`, `ckad-practice`, `kubectl`, `cncf`, `ckad-study-guide`, `gateway-api`
 - [ ] Set **website** field to blog post URL
 - [ ] Enable GitHub Pages (render README as searchable site)
@@ -39,7 +39,7 @@ Actionable checklist to maximize reach, stars, and traffic.
 
 ## Phase 5: Distribution Blitz (Week 3)
 
-- [ ] **Reddit**: Post to r/kubernetes, r/devops, r/CKAD, r/sysadmin — angle: "Scored 91%, open-sourcing my complete CKAD prep (K8s v1.35, Gateway API)"
+- [ ] **Reddit**: Post to r/kubernetes, r/devops, r/CKAD, r/sysadmin — angle: "Scored 91%, open-sourcing my complete CKAD prep (K8s v1.37, Gateway API)"
 - [ ] **Hacker News**: "Show HN: CKAD Study Guide — scored 91%, open-sourced" 
 - [ ] **Dev.to**: Write article "How I Passed CKAD 2026 with 91% — Complete Open Source Study Guide"
 - [ ] **LinkedIn**: Write post with exam score card image
@@ -67,7 +67,7 @@ Actionable checklist to maximize reach, stars, and traffic.
 
 | Repo | Stars | Weakness | Our Advantage |
 |------|-------|----------|---------------|
-| dgkanatsios/CKAD-exercises | 8k+ | Outdated (v1.28), no Gateway API, no mock exam | Current v1.35, Gateway API, full mock exam |
+| dgkanatsios/CKAD-exercises | 8k+ | Outdated (v1.28), no Gateway API, no mock exam | Current v1.37, Gateway API, full mock exam |
 | bmuschko/ckad-crash-course | 2k+ | Minimal explanations, no exam tips | Deep exam strategy, mistakes section, PSI tips |
 | lucassha/CKAD-resources | 1k+ | Link collection only, no original content | Full original content, exercises, skeletons |
 

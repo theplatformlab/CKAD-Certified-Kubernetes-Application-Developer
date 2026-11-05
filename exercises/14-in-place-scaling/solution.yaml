@@ -22,7 +22,7 @@ spec:
         memory: 128Mi
 
 # After the pod is running, resize CPU in-place (no restart):
-# kubectl patch pod resize-demo -n exercise-14 --patch '{"spec":{"containers":[{"name":"nginx","resources":{"requests":{"cpu":"200m"},"limits":{"cpu":"400m"}}}]}}'
+# kubectl patch pod resize-demo -n exercise-14 --subresource=resize --patch '{"spec":{"containers":[{"name":"nginx","resources":{"requests":{"cpu":"200m"},"limits":{"cpu":"400m"}}}]}}'
 #
 # Then resize memory (triggers container restart):
-# kubectl patch pod resize-demo -n exercise-14 --patch '{"spec":{"containers":[{"name":"nginx","resources":{"requests":{"memory":"128Mi"},"limits":{"memory":"256Mi"}}}]}}'
+# kubectl patch pod resize-demo -n exercise-14 --subresource=resize --patch '{"spec":{"containers":[{"name":"nginx","resources":{"requests":{"memory":"128Mi"},"limits":{"memory":"256Mi"}}}]}}'

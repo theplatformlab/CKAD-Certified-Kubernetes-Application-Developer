@@ -5,6 +5,8 @@ All notable changes to this repo are documented here. Follows [Keep a Changelog]
 ## [Unreleased]
 
 ### Added
+- Original 2027 CKAD challenge set with five integrated tasks and separate worked solutions under `mock-exams/`
+- Exercise and mock-exam catalogs with domain mapping, practice guidance, and complete exam/solution navigation
 - `solution.yaml` files for all 14 exercises — compare your attempt against the reference
 - `scripts/mock-exam.sh` — full 17-question timed mock exam with auto-scoring and domain breakdown
 - `scripts/create-cluster.sh` — one-command local cluster setup (kind, minikube, or k3d)
@@ -16,6 +18,11 @@ All notable changes to this repo are documented here. Follows [Keep a Changelog]
 - Enhanced `CONTRIBUTING.md` with exercise creation guide
 
 ### Changed
+- Added a short fast-prep route and curriculum-weighted exercise map for time-limited CKAD study
+- Reframed learner guidance for 2027 with dated official exam facts, an adaptable study loop, and explicit limits on anecdotal feedback and mock-score predictions
+- Reworked mock exams with realistic multi-resource tasks, runnable solution workflows, explicit cluster prerequisites, and corrected practice-point totals
+- Updated current CKAD practice and CI cluster targets from Kubernetes v1.35 to v1.37; refreshed resize and native-sidecar exercise guidance
+- Updated README quick start, exam-version caveats, and MkDocs navigation to surface the study paths, exercises, patterns, mock exams, and references
 - Enhanced `scripts/quiz.sh` with domain filtering, speed mode, and score history
 - Improved exercise READMEs with target completion times and gotchas
 

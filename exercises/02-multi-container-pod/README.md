@@ -1,8 +1,8 @@
 # Exercise 2 — Multi-Container Pod (Sidecar) `Medium`
 
-> Related: [Application Design and Build](../../README.md#1-application-design-and-build-20) | [What Changed in v1.35](../../README.md#what-changed-in-v135) | [YAML Skeleton: Pod](../../skeletons/pod.yaml)
+> Related: [Application Design and Build](../../README.md#1-application-design-and-build-20) | [Native Sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/) | [YAML Skeleton: Pod](../../skeletons/pod.yaml)
 
-Practice the sidecar pattern using shared volumes and the v1.35 native sidecar syntax.
+Practice the sidecar pattern using shared volumes and native sidecars, stable since Kubernetes v1.33.
 
 ## Task
 
@@ -24,7 +24,7 @@ Practice the sidecar pattern using shared volumes and the v1.35 native sidecar s
 - **Both containers must mount the same volume** — if only the main container writes to `/var/log` but the sidecar doesn't mount it, `tail -f` sees nothing
 - **`emptyDir` is ephemeral** — data is lost when the pod is deleted; don't confuse it with persistent storage
 - **Container names must be unique** within a pod — Kubernetes rejects the spec otherwise
-- **Native sidecar (v1.35)** — uses `initContainers` with `restartPolicy: Always`, not `containers`. The ordering matters: the sidecar starts before the main container
+- **Native sidecar** — uses `initContainers` with `restartPolicy: Always`, not `containers`. The ordering matters: the sidecar starts before the main container
 
 ## Verify
 
@@ -33,7 +33,7 @@ kubectl get pod app-with-sidecar -n exercise-02
 kubectl logs app-with-sidecar -n exercise-02 -c log-agent
 ```
 
-## Bonus — Native Sidecar (v1.35)
+## Bonus — Native Sidecar
 
 Recreate using the native sidecar syntax (`restartPolicy: Always` inside `initContainers`).
 
@@ -80,7 +80,7 @@ spec:
 </details>
 
 <details>
-<summary>Solution — Native Sidecar (v1.35)</summary>
+<summary>Solution — Native Sidecar</summary>
 
 ```yaml
 apiVersion: v1
